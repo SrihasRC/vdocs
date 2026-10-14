@@ -31,7 +31,7 @@ export function CommandBlockRenderer({ block }: CommandBlockProps) {
           {/* Badges: Sudo & OS Tags */}
           <div className="flex items-center gap-1.5 flex-wrap">
             {sudo && (
-              <span className="inline-flex items-center gap-1 rounded-full border border-amber-500/40 bg-amber-500/10 px-2 py-0.5 text-xs font-mono font-medium text-amber-400">
+              <span className="rounded-md flex items-center gap-1 border border-amber-500/40 bg-amber-500/10 px-1.5 py-0.5 text-[11px] font-mono capitalize">
                 <ShieldAlert className="h-3 w-3" />
                 sudo
               </span>
