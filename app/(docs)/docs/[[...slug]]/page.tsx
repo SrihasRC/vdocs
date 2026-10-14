@@ -14,6 +14,7 @@ import { and, asc, eq, inArray } from "drizzle-orm";
 import { BlockListRenderer } from "@/components/blocks/block-renderer";
 import { ChildPagesGrid } from "@/components/blocks/child-pages-grid";
 import { generateTocFromBlocks } from "@/lib/block-toc";
+import { PageEditorView } from "@/components/editor/page-editor-view";
 import { connection } from "next/server";
 
 export const instant = false;
@@ -110,8 +111,11 @@ export default async function Page({ params }: Props) {
         </div>
 
         <DocsBody className="mt-6">
-          <BlockListRenderer blocks={dbPage.blocks} files={filesMap} />
-          <ChildPagesGrid childrenPages={childPages} />
+          <PageEditorView
+            page={dbPage}
+            filesMap={filesMap}
+            childPages={childPages}
+          />
         </DocsBody>
       </DocsPage>
     );
