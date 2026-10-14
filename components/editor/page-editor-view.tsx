@@ -73,26 +73,33 @@ export function PageEditorView({
     })
   );
 
-  // Save blocks handler
-  const saveNow = useCallback(async () => {
-    setIsSaving(true);
-    const res = await savePageBlocks(page.id, blocksRef.current);
-    setIsSaving(false);
+  // Save blocks handler (silent by default for autosave, refreshes on explicit exit)
+  const saveNow = useCallback(
+    async (shouldRefresh = false) => {
+      setIsSaving(true);
+      const res = await savePageBlocks(page.id, blocksRef.current);
+      setIsSaving(false);
 
-    if (res.success) {
-      setHasUnsavedChanges(false);
-      setLastSavedTime(new Date());
-      router.refresh();
-    } else {
-      console.error("Save error:", res.error);
-    }
-  }, [page.id, router]);
+      if (res.success) {
+        setHasUnsavedChanges(false);
+        setLastSavedTime(new Date());
+        if (shouldRefresh) {
+          router.refresh();
+        }
+      } else {
+        console.error("Save error:", res.error);
+      }
+    },
+    [page.id, router]
+  );
 
-  // Sync blocks state when server passes updated page props
+  // Sync blocks state when server passes updated page props ONLY when NOT in edit mode
   useEffect(() => {
-    setBlocks(page.blocks);
-    blocksRef.current = page.blocks;
-  }, [page.blocks]);
+    if (!isEditing) {
+      setBlocks(page.blocks);
+      blocksRef.current = page.blocks;
+    }
+  }, [page.blocks, isEditing]);
 
   // When exiting edit mode, trigger a scroll event to notify TOC IntersectionObserver
   useEffect(() => {
@@ -104,16 +111,26 @@ export function PageEditorView({
     }
   }, [isEditing]);
 
-  // Debounced autosave when blocks change in edit mode
+  // Debounced autosave when blocks change in edit mode (silent background save, keeps edit mode active)
   useEffect(() => {
     if (!hasUnsavedChanges || !isEditing) return;
 
     const timer = setTimeout(() => {
-      saveNow();
+      saveNow(false);
     }, 2500);
 
     return () => clearTimeout(timer);
   }, [hasUnsavedChanges, isEditing, saveNow]);
+
+  // Handle explicit exit from edit mode
+  const handleDone = useCallback(async () => {
+    if (hasUnsavedChanges) {
+      await saveNow(true);
+    } else {
+      router.refresh();
+    }
+    setIsEditing(false);
+  }, [hasUnsavedChanges, saveNow, router]);
 
   // Global Keyboard Shortcuts (E to toggle, Esc to exit, Cmd+S to save)
   useEffect(() => {
@@ -126,11 +143,11 @@ export function PageEditorView({
           target.tagName === "TEXTAREA" ||
           target.isContentEditable);
 
-      // Cmd+S / Ctrl+S to save
+      // Cmd+S / Ctrl+S to save in place (stays in edit mode)
       if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "s") {
         if (isEditing) {
           e.preventDefault();
-          saveNow();
+          saveNow(false);
         }
         return;
       }
@@ -139,10 +156,7 @@ export function PageEditorView({
       if (e.key === "Escape" && isEditing) {
         if (!isInput) {
           e.preventDefault();
-          if (hasUnsavedChanges) {
-            saveNow();
-          }
-          setIsEditing(false);
+          handleDone();
         }
         return;
       }
@@ -150,18 +164,17 @@ export function PageEditorView({
       // E to toggle edit mode
       if (e.key.toLowerCase() === "e" && !isInput && !e.metaKey && !e.ctrlKey) {
         e.preventDefault();
-        setIsEditing((prev) => {
-          if (prev && hasUnsavedChanges) {
-            saveNow();
-          }
-          return !prev;
-        });
+        if (isEditing) {
+          handleDone();
+        } else {
+          setIsEditing(true);
+        }
       }
     };
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [isEditing, hasUnsavedChanges, saveNow]);
+  }, [isEditing, saveNow, handleDone]);
 
   // Block Mutations
   const handleBlockChange = (updated: Block) => {
@@ -319,7 +332,7 @@ export function PageEditorView({
                 type="button"
                 variant="outline"
                 size="sm"
-                onClick={saveNow}
+                onClick={() => saveNow(false)}
                 disabled={isSaving || !hasUnsavedChanges}
                 className="h-8 text-xs gap-1.5"
               >
@@ -334,10 +347,7 @@ export function PageEditorView({
               <Button
                 type="button"
                 size="sm"
-                onClick={() => {
-                  if (hasUnsavedChanges) saveNow();
-                  setIsEditing(false);
-                }}
+                onClick={handleDone}
                 className="h-8 text-xs bg-amber-400 text-black hover:bg-amber-300 font-semibold gap-1.5"
               >
                 <Check className="h-3.5 w-3.5" />
