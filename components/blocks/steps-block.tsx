@@ -47,11 +47,8 @@ export function StepsBlockRenderer({ block }: StepsBlockProps) {
 
               {/* Optional Step Command Box */}
               {step.command && (
-                <div className="mt-2.5 relative flex items-center justify-between rounded-lg border border-fd-border bg-[#0d0d0f] px-3.5 py-2 text-xs font-mono shadow-inner group/cmd">
-                  <span className="text-fd-foreground select-text overflow-x-auto py-0.5 pr-2">
-                    <span className="text-amber-400/70 select-none mr-2 font-semibold">
-                      $
-                    </span>
+                <div className="not-prose mt-2.5 relative flex items-center justify-between rounded-lg border border-fd-border bg-[#0d0d0f] px-3.5 py-2 text-xs font-mono group/cmd">
+                  <span className="text-fd-foreground select-text overflow-x-auto py-0.5 pr-2 font-mono">
                     {step.command}
                   </span>
                   <CopyButton

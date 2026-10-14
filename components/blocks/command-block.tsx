@@ -56,12 +56,11 @@ export function CommandBlockRenderer({ block }: CommandBlockProps) {
       </div>
 
       {/* Terminal Block */}
-      <div className="relative rounded-lg border border-fd-border bg-[#0d0d0f] shadow-inner overflow-hidden">
+      <div className="not-prose relative rounded-lg border border-fd-border bg-[#0d0d0f] overflow-hidden">
         {/* Terminal Header */}
-        <div className="flex items-center justify-between px-3.5 py-2 border-b border-fd-border/60 bg-[#121215]/80 text-xs text-fd-muted-foreground">
+        <div className="flex items-center justify-between px-3.5 py-2 border-b border-fd-border/60 bg-[#121215]/80 text-xs text-fd-muted-foreground font-mono">
           <div className="flex items-center gap-2">
-            <Terminal className="h-3.5 w-3.5 text-amber-400/80" />
-            <span className="font-mono text-[11px] tracking-wide text-fd-foreground/80">
+            <span className="text-[11px] tracking-wide text-fd-foreground/80">
               {shell || "bash"}
             </span>
           </div>
@@ -69,16 +68,11 @@ export function CommandBlockRenderer({ block }: CommandBlockProps) {
         </div>
 
         {/* Command Body */}
-        <div className="p-3.5 overflow-x-auto text-sm font-mono leading-relaxed select-text">
-          <pre className="text-fd-foreground">
-            <code>
-              <span className="text-amber-400/70 select-none mr-2 font-semibold">
-                $
-              </span>
-              {command}
-            </code>
-          </pre>
-        </div>
+        <pre className="p-3.5 overflow-x-auto text-sm font-mono leading-relaxed text-fd-foreground bg-transparent select-text m-0">
+          <code className="bg-transparent border-0 p-0 text-inherit font-mono font-normal">
+            {command}
+          </code>
+        </pre>
       </div>
 
       {/* Optional Notes */}
