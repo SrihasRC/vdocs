@@ -359,37 +359,39 @@ export function PageEditorView({
         </div>
       </div>
 
-      {/* Edit Mode View */}
-      <div className={isEditing ? "space-y-4" : "hidden"}>
-        <DndContext
-          sensors={sensors}
-          collisionDetection={closestCenter}
-          onDragEnd={handleDragEnd}
-        >
-          <SortableContext
-            items={blocks.map((b) => b.id)}
-            strategy={verticalListSortingStrategy}
+      {/* Edit Mode View (Mounted only on client when editing to avoid DndDescribedBy SSR hydration mismatch) */}
+      {isEditing && (
+        <div className="space-y-4">
+          <DndContext
+            sensors={sensors}
+            collisionDetection={closestCenter}
+            onDragEnd={handleDragEnd}
           >
-            <div className="space-y-4">
-              {blocks.map((block) => (
-                <SortableBlock
-                  key={block.id}
-                  block={block}
-                  onChange={handleBlockChange}
-                  onDuplicate={handleBlockDuplicate}
-                  onDelete={handleBlockDelete}
-                />
-              ))}
-            </div>
-          </SortableContext>
-        </DndContext>
+            <SortableContext
+              items={blocks.map((b) => b.id)}
+              strategy={verticalListSortingStrategy}
+            >
+              <div className="space-y-4">
+                {blocks.map((block) => (
+                  <SortableBlock
+                    key={block.id}
+                    block={block}
+                    onChange={handleBlockChange}
+                    onDuplicate={handleBlockDuplicate}
+                    onDelete={handleBlockDelete}
+                  />
+                ))}
+              </div>
+            </SortableContext>
+          </DndContext>
 
-        {/* Add Block Action Bar */}
-        <AddBlockBar
-          onAddBlock={handleAddBlock}
-          onOpenCreateSubpage={() => setShowCreateSubpage(true)}
-        />
-      </div>
+          {/* Add Block Action Bar */}
+          <AddBlockBar
+            onAddBlock={handleAddBlock}
+            onOpenCreateSubpage={() => setShowCreateSubpage(true)}
+          />
+        </div>
+      )}
 
       {/* Read Mode View (Kept in DOM so IntersectionObserver stays connected) */}
       <div className={isEditing ? "hidden" : "block"}>

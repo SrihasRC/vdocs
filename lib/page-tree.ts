@@ -121,17 +121,33 @@ export function buildPageTreeFromPages(
     };
 
     const rootNodes = buildSubTree(null);
+
+    const sectionUrl = sectionKey
+      ? `${baseUrl}/${sectionKey}`.replace(/\/+/g, "/")
+      : baseUrl;
+
+    // In the sidebar, include the main index page at the top of the section!
+    const sectionIndexItem: PageTree.Node[] = indexPage
+      ? [
+          {
+            type: "page",
+            name: indexPage.title,
+            url: sectionUrl,
+          },
+        ]
+      : [];
+    if (sectionIndexItem[0]) {
+      (sectionIndexItem[0] as any).$id = indexPage?.id;
+    }
+
     const children: PageTree.Node[] = [
       {
         type: "separator",
         name: categoryLabel,
       },
+      ...sectionIndexItem,
       ...rootNodes,
     ];
-
-    const sectionUrl = sectionKey
-      ? `${baseUrl}/${sectionKey}`.replace(/\/+/g, "")
-      : baseUrl;
 
     const folder: PageTree.Folder = {
       type: "folder",
