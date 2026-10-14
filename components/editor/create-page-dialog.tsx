@@ -71,8 +71,9 @@ export function CreatePageDialog({
       setTitle("");
       setSlug("");
       setTagsStr("");
-      router.push(`/docs/${res.page.path}`.replace(/\/+/g, "/"));
+      const targetUrl = `/docs/${res.page.path}`.replace(/\/+/g, "/");
       router.refresh();
+      router.push(targetUrl);
     } else {
       alert(res.error || "Failed to create page");
     }

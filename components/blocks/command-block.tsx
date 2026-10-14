@@ -21,7 +21,7 @@ export function CommandBlockRenderer({ block }: CommandBlockProps) {
             <h3 className="text-lg font-semibold tracking-tight text-fd-foreground">
               <a
                 href={`#${blockAnchor}`}
-                className="hover:underline underline-offset-4 decoration-fd-primary/50"
+                className="no-underline hover:underline underline-offset-4 decoration-fd-primary/50 text-fd-foreground"
               >
                 {title}
               </a>

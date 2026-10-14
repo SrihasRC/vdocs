@@ -18,10 +18,10 @@ export function StepsBlockRenderer({ block }: StepsBlockProps) {
     <div id={blockAnchor} className="my-6 scroll-mt-20">
       {title && (
         <h3 className="text-lg font-semibold tracking-tight text-fd-foreground mb-4 flex items-center gap-2">
-          <ListOrdered className="h-4 w-4 text-amber-400" />
+          <ListOrdered className="h-4 w-4 text-amber-400 shrink-0" />
           <a
             href={`#${blockAnchor}`}
-            className="hover:underline underline-offset-4 decoration-fd-primary/50"
+            className="no-underline hover:underline underline-offset-4 decoration-fd-primary/50 text-fd-foreground"
           >
             {title}
           </a>

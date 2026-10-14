@@ -18,10 +18,10 @@ export function NoteBlockRenderer({ block }: NoteBlockProps) {
     <div id={blockAnchor} className="my-6 scroll-mt-20">
       {title && (
         <h3 className="text-xl font-bold tracking-tight text-fd-foreground mb-3 flex items-center gap-2">
-          <FileText className="h-4 w-4 text-amber-400" />
+          <FileText className="h-4 w-4 text-amber-400 shrink-0" />
           <a
             href={`#${blockAnchor}`}
-            className="hover:underline underline-offset-4 decoration-fd-primary/50"
+            className="no-underline hover:underline underline-offset-4 decoration-fd-primary/50 text-fd-foreground"
           >
             {title}
           </a>

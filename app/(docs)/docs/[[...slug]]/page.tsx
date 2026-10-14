@@ -88,8 +88,10 @@ export default async function Page({ params }: Props) {
       filesMap = Object.fromEntries(fileRows.map((f) => [f.id, f]));
     }
 
+    const pageKey = `${dbPage.id}-${dbPage.updatedAt?.getTime?.() || 0}-${dbPage.blocks.length}`;
+
     return (
-      <DocsPage toc={toc}>
+      <DocsPage key={pageKey} toc={toc}>
         <div className="flex flex-col gap-2">
           <DocsTitle className="text-2xl sm:text-3xl font-bold tracking-tight text-fd-foreground">
             {dbPage.title}

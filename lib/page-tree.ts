@@ -39,17 +39,48 @@ export function buildPageTreeFromPages(
     });
   };
 
-  const buildNodesForSection = (
-    sectionPages: Page[],
-    categoryLabel: string,
-    indexUrl: string
-  ): PageTree.Node[] => {
+  const buildSection = ({
+    sectionPages,
+    sectionKey,
+    rootName,
+    rootDesc,
+    categoryLabel,
+  }: {
+    sectionPages: Page[];
+    sectionKey: string;
+    rootName: string;
+    rootDesc: string;
+    categoryLabel: string;
+  }): PageTree.Folder => {
+    // Locate the section index page (e.g. path === "" for vault, path === "commands" for commands)
+    const indexPage =
+      sectionPages.find((p) => p.path === sectionKey) ||
+      sectionPages.find((p) => p.path === "");
+
+    // Child items should NOT include the index page itself to avoid duplicate items
+    const otherPages = sectionPages.filter((p) => p !== indexPage);
+
     const pagesById = new Map<string, Page>();
     const childrenByParent = new Map<string | null, Page[]>();
 
-    for (const p of sectionPages) {
+    for (const p of otherPages) {
       pagesById.set(p.id, p);
-      const parentKey = p.parentId;
+    }
+
+    for (const p of otherPages) {
+      let parentKey = p.parentId;
+      // If parentId is the index page or null, treat as top-level in this section
+      if (!parentKey || (indexPage && parentKey === indexPage.id)) {
+        parentKey = null;
+      } else if (!pagesById.has(parentKey)) {
+        // Fallback: check by path parent
+        const parts = p.path.split("/");
+        parts.pop();
+        const parentPath = parts.join("/");
+        const parentByPath = otherPages.find((op) => op.path === parentPath);
+        parentKey = parentByPath ? parentByPath.id : null;
+      }
+
       if (!childrenByParent.has(parentKey)) {
         childrenByParent.set(parentKey, []);
       }
@@ -61,7 +92,7 @@ export function buildPageTreeFromPages(
       const sorted = sortPages(childPages);
 
       return sorted.map((p): PageTree.Node => {
-        const url = `${baseUrl}/${p.path}`.replace(/\/+/g, "/");
+        const url = `${baseUrl}/${p.path}`.replace(/\/+/g, "/").replace(/\/$/, "");
         const subChildren = buildSubTree(p.id);
 
         if (subChildren.length > 0) {
@@ -75,6 +106,7 @@ export function buildPageTreeFromPages(
             },
             children: subChildren,
           };
+          (folderNode as any).$id = p.id;
           return folderNode;
         }
 
@@ -83,14 +115,13 @@ export function buildPageTreeFromPages(
           name: p.title,
           url,
         };
+        (itemNode as any).$id = p.id;
         return itemNode;
       });
     };
 
     const rootNodes = buildSubTree(null);
-
-    // If there is an overview page, ensure it is represented
-    const nodes: PageTree.Node[] = [
+    const children: PageTree.Node[] = [
       {
         type: "separator",
         name: categoryLabel,
@@ -98,73 +129,58 @@ export function buildPageTreeFromPages(
       ...rootNodes,
     ];
 
-    return nodes;
+    const sectionUrl = sectionKey
+      ? `${baseUrl}/${sectionKey}`.replace(/\/+/g, "")
+      : baseUrl;
+
+    const folder: PageTree.Folder = {
+      type: "folder",
+      name: rootName,
+      description: rootDesc,
+      root: true,
+      defaultOpen: true,
+      index: {
+        type: "page",
+        name: indexPage ? indexPage.title : rootName,
+        url: sectionUrl,
+      },
+      children,
+    };
+    (folder as any).$id = `root-${rootName.toLowerCase()}`;
+
+    return folder;
   };
 
-  const vaultChildren = buildNodesForSection(
-    vaultPages,
-    "Introduction",
-    `${baseUrl}`
-  );
+  const vaultFolder = buildSection({
+    sectionPages: vaultPages,
+    sectionKey: "",
+    rootName: "Vault",
+    rootDesc: "Personal docs & knowledge base",
+    categoryLabel: "Introduction",
+  });
 
-  const commandsChildren = buildNodesForSection(
-    commandsPages,
-    "Runbooks & Tools",
-    `${baseUrl}/commands`
-  );
+  const commandsFolder = buildSection({
+    sectionPages: commandsPages,
+    sectionKey: "commands",
+    rootName: "Commands",
+    rootDesc: "System commands & CLI snippets",
+    categoryLabel: "Runbooks & Tools",
+  });
 
-  const applicationsChildren = buildNodesForSection(
-    applicationsPages,
-    "Career & Preparation",
-    `${baseUrl}/applications`
-  );
+  const applicationsFolder = buildSection({
+    sectionPages: applicationsPages,
+    sectionKey: "applications",
+    rootName: "Applications",
+    rootDesc: "Job applications, questions & profiles",
+    categoryLabel: "Career & Preparation",
+  });
 
-  const vaultFolder: PageTree.Folder = {
-    type: "folder",
-    name: "Vault",
-    description: "Personal docs & knowledge base",
-    root: true,
-    defaultOpen: true,
-    index: {
-      type: "page",
-      name: "Overview",
-      url: `${baseUrl}`,
-    },
-    children: vaultChildren,
-  };
-
-  const commandsFolder: PageTree.Folder = {
-    type: "folder",
-    name: "Commands",
-    description: "System commands & CLI snippets",
-    root: true,
-    defaultOpen: true,
-    index: {
-      type: "page",
-      name: "Commands & Runbooks",
-      url: `${baseUrl}/commands`,
-    },
-    children: commandsChildren,
-  };
-
-  const applicationsFolder: PageTree.Folder = {
-    type: "folder",
-    name: "Applications",
-    description: "Job applications, questions & profiles",
-    root: true,
-    defaultOpen: true,
-    index: {
-      type: "page",
-      name: "Applications Overview",
-      url: `${baseUrl}/applications`,
-    },
-    children: applicationsChildren,
-  };
-
-  return {
+  const tree: PageTree.Root = {
     name: "vdocs",
     children: [vaultFolder, commandsFolder, applicationsFolder],
   };
+
+  return tree;
 }
 
 import { connection } from "next/server";
@@ -191,7 +207,15 @@ export async function getDbPageTree(baseUrl: string = "/docs"): Promise<PageTree
         .orderBy(asc(pages.position));
     }
 
-    return buildPageTreeFromPages(dbPages, baseUrl);
+    const tree = buildPageTreeFromPages(dbPages, baseUrl);
+
+    // Compute version hash for Fumadocs TreeContextProvider useMemo invalidation
+    const versionKey = `${dbPages.length}-${dbPages
+      .map((p) => `${p.id}:${p.updatedAt?.getTime?.() || 0}`)
+      .join(",")}`;
+    (tree as any).$id = versionKey;
+
+    return tree;
   } catch (error) {
     console.error("Failed to fetch DB page tree:", error);
     return {

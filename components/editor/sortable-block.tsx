@@ -97,6 +97,7 @@ export function SortableBlock({
   return (
     <div
       ref={setNodeRef}
+      id={`block-${block.id}`}
       style={style}
       className={cn(
         "rounded-lg border border-fd-border bg-fd-card shadow-sm transition-all overflow-hidden",

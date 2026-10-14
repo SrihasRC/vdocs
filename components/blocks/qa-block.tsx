@@ -29,7 +29,7 @@ export function QABlockRenderer({ block }: QABlockProps) {
           <h3 className="text-base font-semibold text-fd-foreground tracking-tight">
             <a
               href={`#${blockAnchor}`}
-              className="hover:underline underline-offset-4 decoration-fd-primary/50"
+              className="no-underline hover:underline underline-offset-4 decoration-fd-primary/50 text-fd-foreground"
             >
               {question}
             </a>

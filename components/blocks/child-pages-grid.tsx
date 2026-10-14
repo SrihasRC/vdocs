@@ -36,8 +36,8 @@ export function ChildPagesGrid({
   };
 
   return (
-    <div className="mt-8 pt-6 border-t border-fd-border/70">
-      <h3 className="text-sm font-semibold uppercase tracking-wider text-fd-muted-foreground mb-4">
+    <div className="not-prose mt-8 pt-6 border-t border-fd-border/70">
+      <h3 className="text-xs font-semibold uppercase tracking-wider text-fd-muted-foreground mb-4">
         {title}
       </h3>
 
@@ -46,23 +46,23 @@ export function ChildPagesGrid({
           <Link
             key={page.id}
             href={`/docs/${page.path}`.replace(/\/+/g, "/")}
-            className="group relative flex flex-col justify-between rounded-lg border border-fd-border bg-fd-card/40 p-4 transition-all hover:bg-fd-accent/40 hover:border-amber-400/40 hover:shadow-sm"
+            className="group relative flex flex-col justify-between rounded-lg border border-fd-border bg-fd-card/40 p-3.5 transition-all hover:bg-fd-accent/40 hover:border-amber-400/40 hover:shadow-sm"
           >
             <div>
-              <div className="flex items-center justify-between mb-2">
-                <div className="flex items-center gap-2">
-                  <div className="flex h-7 w-7 items-center justify-center rounded-lg border border-fd-border/60 bg-fd-secondary/30">
+              <div className="flex items-center justify-between gap-3 mb-2">
+                <div className="flex items-center gap-2.5 min-w-0">
+                  <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg border border-fd-border/60 bg-fd-secondary/30">
                     {getTemplateIcon(page.template)}
                   </div>
-                  <h4 className="text-sm font-semibold text-fd-foreground group-hover:text-amber-400 transition-colors">
+                  <span className="text-sm font-semibold text-fd-foreground group-hover:text-amber-400 transition-colors truncate">
                     {page.title}
-                  </h4>
+                  </span>
                 </div>
-                <ArrowRight className="h-3.5 w-3.5 text-fd-muted-foreground group-hover:text-amber-400 group-hover:translate-x-0.5 transition-all" />
+                <ArrowRight className="h-4 w-4 shrink-0 text-fd-muted-foreground group-hover:text-amber-400 group-hover:translate-x-0.5 transition-all" />
               </div>
 
               {page.description && (
-                <p className="text-xs text-fd-muted-foreground line-clamp-2 leading-relaxed">
+                <p className="text-xs text-fd-muted-foreground line-clamp-2 leading-relaxed mt-1">
                   {page.description}
                 </p>
               )}
@@ -73,7 +73,7 @@ export function ChildPagesGrid({
                 {page.tags.map((tag) => (
                   <span
                     key={tag}
-                    className="rounded border border-fd-border/60 bg-fd-secondary/20 px-1.5 py-0.2 text-[10px] font-mono text-fd-muted-foreground"
+                    className="rounded border border-fd-border/60 bg-fd-secondary/20 px-1.5 py-0.5 text-[10px] font-mono text-fd-muted-foreground"
                   >
                     #{tag}
                   </span>

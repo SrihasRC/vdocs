@@ -88,6 +88,22 @@ export function PageEditorView({
     }
   }, [page.id, router]);
 
+  // Sync blocks state when server passes updated page props
+  useEffect(() => {
+    setBlocks(page.blocks);
+    blocksRef.current = page.blocks;
+  }, [page.blocks]);
+
+  // When exiting edit mode, trigger a scroll event to notify TOC IntersectionObserver
+  useEffect(() => {
+    if (!isEditing) {
+      const timer = setTimeout(() => {
+        window.dispatchEvent(new Event("scroll"));
+      }, 50);
+      return () => clearTimeout(timer);
+    }
+  }, [isEditing]);
+
   // Debounced autosave when blocks change in edit mode
   useEffect(() => {
     if (!hasUnsavedChanges || !isEditing) return;
@@ -343,44 +359,43 @@ export function PageEditorView({
         </div>
       </div>
 
-      {/* Main Content Area: Swaps between Read & Edit mode */}
-      {isEditing ? (
-        <div className="space-y-4">
-          <DndContext
-            sensors={sensors}
-            collisionDetection={closestCenter}
-            onDragEnd={handleDragEnd}
+      {/* Edit Mode View */}
+      <div className={isEditing ? "space-y-4" : "hidden"}>
+        <DndContext
+          sensors={sensors}
+          collisionDetection={closestCenter}
+          onDragEnd={handleDragEnd}
+        >
+          <SortableContext
+            items={blocks.map((b) => b.id)}
+            strategy={verticalListSortingStrategy}
           >
-            <SortableContext
-              items={blocks.map((b) => b.id)}
-              strategy={verticalListSortingStrategy}
-            >
-              <div className="space-y-4">
-                {blocks.map((block) => (
-                  <SortableBlock
-                    key={block.id}
-                    block={block}
-                    onChange={handleBlockChange}
-                    onDuplicate={handleBlockDuplicate}
-                    onDelete={handleBlockDelete}
-                  />
-                ))}
-              </div>
-            </SortableContext>
-          </DndContext>
+            <div className="space-y-4">
+              {blocks.map((block) => (
+                <SortableBlock
+                  key={block.id}
+                  block={block}
+                  onChange={handleBlockChange}
+                  onDuplicate={handleBlockDuplicate}
+                  onDelete={handleBlockDelete}
+                />
+              ))}
+            </div>
+          </SortableContext>
+        </DndContext>
 
-          {/* Add Block Action Bar */}
-          <AddBlockBar
-            onAddBlock={handleAddBlock}
-            onOpenCreateSubpage={() => setShowCreateSubpage(true)}
-          />
-        </div>
-      ) : (
-        <div>
-          <BlockListRenderer blocks={blocks} files={filesMap} />
-          <ChildPagesGrid childrenPages={childPages} />
-        </div>
-      )}
+        {/* Add Block Action Bar */}
+        <AddBlockBar
+          onAddBlock={handleAddBlock}
+          onOpenCreateSubpage={() => setShowCreateSubpage(true)}
+        />
+      </div>
+
+      {/* Read Mode View (Kept in DOM so IntersectionObserver stays connected) */}
+      <div className={isEditing ? "hidden" : "block"}>
+        <BlockListRenderer blocks={blocks} files={filesMap} />
+        <ChildPagesGrid childrenPages={childPages} />
+      </div>
 
       {/* Page Settings & Metadata Dialog */}
       <PageSettingsDialog
