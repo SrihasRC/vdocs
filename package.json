@@ -18,6 +18,7 @@
     "@dnd-kit/core": "^6.3.1",
     "@dnd-kit/sortable": "^10.0.0",
     "@dnd-kit/utilities": "^3.2.2",
+    "@fumadocs/base-ui": "^16.17.2",
     "@hookform/resolvers": "^5.9.1",
     "@neon/config": "^1.9.1",
     "@neon/env": "^1.6.1",
@@ -31,6 +32,7 @@
     "cn": "^0.4.0",
     "drizzle-orm": "^0.45.4",
     "fumadocs-core": "^16.17.1",
+    "fumadocs-mdx": "^15.4.7",
     "fumadocs-ui": "^16.17.1",
     "lucide-react": "^1.56.0",
     "next": "16.4.0",
@@ -47,6 +49,7 @@
   },
   "devDependencies": {
     "@tailwindcss/turbopack": "^4",
+    "@types/mdx": "^2.0.14",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",

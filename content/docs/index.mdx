@@ -1,0 +1,45 @@
+---
+title: Quick Start
+description: Getting Started with vdocs
+---
+
+import { Card, Cards } from 'fumadocs-ui/components/card';
+import { Callout } from 'fumadocs-ui/components/callout';
+
+<Callout title="Personal Knowledge Vault" type="info">
+  vdocs replaces scattered notes, re-hunting terminal commands, and digging up resume details for job applications. Everything is stored in your personal Neon Postgres database with instant search.
+</Callout>
+
+## Introduction
+
+**vdocs** is a private, cloud-hosted documentation framework and knowledge vault designed to be fast, flexible, and accessible from any device. It blends the sleek design of **Fumadocs** with a structured database backend.
+
+<Cards>
+  <Card
+    title="Neon Lakebase Postgres"
+    description="Serverless Postgres with typed jsonb blocks, low latency, and pg_trgm search."
+  />
+  <Card
+    title="Fumadocs Spacious UI"
+    description="Clean documentation shell with inset panel scrolling, command palette, and dark mode."
+  />
+  <Card
+    title="Structured Typed Blocks"
+    description="Commands, numbered steps, Q&A pairs, markdown notes, and file attachments."
+  />
+  <Card
+    title="Better Auth Gated"
+    description="Single-user private vault secured by Better Auth with passkeys and 2FA."
+  />
+</Cards>
+
+## Core Concepts
+
+### 1. One Unified Page Tree
+Every document is a node in the tree. Categories, documents, and sub-pages share the same structure, allowing unlimited nested organization.
+
+### 2. Typed Content Blocks
+Content is stored as structured JSON rather than raw markdown files. This enables purpose-built forms for commands, multi-step runbooks, and job questionnaire responses.
+
+### 3. Read and Edit on One URL
+Seamlessly toggle between read mode with one-click copy buttons and edit mode with instant draft saves.

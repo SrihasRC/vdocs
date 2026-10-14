@@ -1,0 +1,19 @@
+---
+title: Architecture
+description: How vdocs is built and how data flows through the system
+---
+
+## System Overview
+
+Every page and file request is authenticated. The application communicates with Neon Postgres over serverless HTTPS connection pooling, and issues presigned URLs for direct file transfers to Cloudflare R2.
+
+### Tech Stack
+
+| Layer | Provider / Tool | Purpose |
+| --- | --- | --- |
+| **Framework** | Next.js 16 + React 19 | App Router, Server Actions, PPR |
+| **Docs Shell** | Fumadocs Base UI | Spacious Layout, Sidebar, Search & Theming |
+| **Database** | Neon Serverless Postgres | Typed JSONB blocks, pg_trgm search |
+| **ORM** | Drizzle ORM | Type-safe migrations and queries |
+| **Auth** | Better Auth | Self-hosted auth, passkeys, 2FA |
+| **Storage** | Cloudflare R2 | S3-compatible file storage with presigned URLs |
