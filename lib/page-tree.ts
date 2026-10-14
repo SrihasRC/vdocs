@@ -72,27 +72,38 @@ export function buildPageTreeFromPages(
   };
 }
 
+import { connection } from "next/server";
+
 /**
  * Fetches all published pages from the database and returns the Fumadocs PageTree.
  * If the database has no pages, it seeds initial starter documentation.
  */
 export async function getDbPageTree(baseUrl: string = "/docs"): Promise<PageTree.Root> {
-  let dbPages = await db
-    .select()
-    .from(pages)
-    .where(eq(pages.status, "published"))
-    .orderBy(asc(pages.position));
-
-  if (dbPages.length === 0) {
-    await seedInitialPages();
-    dbPages = await db
+  await connection();
+  try {
+    let dbPages = await db
       .select()
       .from(pages)
       .where(eq(pages.status, "published"))
       .orderBy(asc(pages.position));
-  }
 
-  return buildPageTreeFromPages(dbPages, baseUrl);
+    if (dbPages.length === 0) {
+      await seedInitialPages();
+      dbPages = await db
+        .select()
+        .from(pages)
+        .where(eq(pages.status, "published"))
+        .orderBy(asc(pages.position));
+    }
+
+    return buildPageTreeFromPages(dbPages, baseUrl);
+  } catch (error) {
+    console.error("Failed to fetch DB page tree:", error);
+    return {
+      name: "vdocs",
+      children: [],
+    };
+  }
 }
 
 /**
@@ -101,6 +112,54 @@ export async function getDbPageTree(baseUrl: string = "/docs"): Promise<PageTree
 export async function seedInitialPages() {
   const existingCount = await db.$count(pages);
   if (existingCount > 0) return;
+
+  // 0. Root Overview Page
+  await db.insert(pages).values({
+    slug: "index",
+    path: "",
+    title: "Vault Overview",
+    template: "index",
+    position: 0,
+    tags: ["vault", "overview"],
+    status: "published",
+    blocks: [
+      {
+        id: "vault-intro",
+        type: "note",
+        data: {
+          title: "Welcome to your Private Vault",
+          markdown:
+            "Welcome to **vdocs** — a fast, private documentation vault built for your terminal snippets, runbooks, and interview answers.\n\nEverything here is saved directly to your **Neon Postgres** database with instant search and typed structured blocks.",
+        },
+      },
+      {
+        id: "vault-quick-command",
+        type: "command",
+        data: {
+          title: "Search your vault via CLI",
+          description: "Instant full-text and trigram fuzzy search across all your notes and commands",
+          shell: "bash",
+          command: "vdocs search 'system update'",
+          sudo: false,
+          os: ["Linux", "macOS"],
+          notes: "Fast fuzzy search powered by pg_trgm in Postgres.",
+        },
+      },
+      {
+        id: "vault-steps",
+        type: "steps",
+        data: {
+          title: "How to use vdocs",
+          steps: [
+            { text: "Browse runbooks and snippets using the left sidebar navigation." },
+            { text: "Use **Ctrl + K** or the top search bar for instant trigram search across all commands and answers.", command: "Ctrl + K" },
+            { text: "Press **E** to switch into in-place edit mode to add or update blocks." },
+          ],
+        },
+      },
+    ],
+    searchText: "Welcome to your Private Vault vdocs Search your vault via CLI How to use vdocs",
+  });
 
   // 1. Root / Quick Start
   const [quickstart] = await db

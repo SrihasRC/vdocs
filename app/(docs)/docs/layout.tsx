@@ -1,12 +1,18 @@
+import { getDbPageTree } from "@/lib/page-tree";
 import { source } from "@/lib/source";
 import { DocsLayout } from "@fumadocs/base-ui/layouts/spacious";
 import { baseOptions } from "@/lib/layout.shared";
 import type { ReactNode } from "react";
 
-export default function Layout({ children }: { children: ReactNode }) {
+export const instant = false;
+
+export default async function Layout({ children }: { children: ReactNode }) {
+  const dbTree = await getDbPageTree();
+  const tree = dbTree.children.length > 0 ? dbTree : source.getPageTree();
+
   return (
     <DocsLayout
-      tree={source.getPageTree()}
+      tree={tree}
       {...baseOptions()}
       tabs={[
         {
@@ -22,7 +28,7 @@ export default function Layout({ children }: { children: ReactNode }) {
         {
           title: "Applications",
           description: "Job applications, questions & profiles",
-          url: "/docs/applications",
+          url: "/docs/applications/job-answers",
         },
       ]}
     >
