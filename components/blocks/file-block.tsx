@@ -32,7 +32,7 @@ export function FileBlockRenderer({ block, fileData }: FileBlockProps) {
   return (
     <div
       id={blockAnchor}
-      className="my-5 rounded-xl border border-fd-border bg-fd-card/50 p-4 shadow-sm scroll-mt-20 hover:border-fd-primary/30 transition-colors"
+      className="my-5 rounded-lg border border-fd-border bg-fd-card/50 p-4 shadow-sm scroll-mt-20 hover:border-fd-primary/30 transition-colors"
     >
       <div className="flex items-center justify-between gap-4">
         <div className="flex items-center gap-3 min-w-0">

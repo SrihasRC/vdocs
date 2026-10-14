@@ -20,7 +20,7 @@ export function QABlockRenderer({ block }: QABlockProps) {
   return (
     <div
       id={blockAnchor}
-      className="my-5 rounded-xl border border-fd-border bg-fd-card/60 p-4 shadow-sm scroll-mt-20 hover:border-fd-primary/30 transition-colors"
+      className="my-5 rounded-lg border border-fd-border bg-fd-card/60 p-4 shadow-sm scroll-mt-20 hover:border-fd-primary/30 transition-colors"
     >
       {/* Header: Question & Copy Buttons */}
       <div className="flex items-start justify-between gap-3">

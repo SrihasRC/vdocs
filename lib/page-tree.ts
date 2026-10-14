@@ -6,26 +6,32 @@ import { flattenBlocksToSearchText } from "@/lib/search-text";
 /**
  * Builds a Fumadocs PageTree.Root from a list of database page rows.
  */
+/**
+ * Builds a Fumadocs PageTree.Root from a list of database page rows,
+ * organizing pages into scoped root tabs (Vault, Commands, Applications)
+ * with section category separators.
+ */
 export function buildPageTreeFromPages(
   allPages: Page[],
   baseUrl: string = "/docs"
 ): PageTree.Root {
-  // Map pages by ID and group children by parentId
-  const pagesById = new Map<string, Page>();
-  const childrenByParent = new Map<string | null, Page[]>();
+  const publishedPages = allPages.filter((p) => p.status === "published");
 
-  for (const p of allPages) {
-    if (p.status !== "published") continue;
-    pagesById.set(p.id, p);
+  // Partition pages by root section
+  const vaultPages: Page[] = [];
+  const commandsPages: Page[] = [];
+  const applicationsPages: Page[] = [];
 
-    const parentKey = p.parentId;
-    if (!childrenByParent.has(parentKey)) {
-      childrenByParent.set(parentKey, []);
+  for (const p of publishedPages) {
+    if (p.path === "commands" || p.path.startsWith("commands/")) {
+      commandsPages.push(p);
+    } else if (p.path === "applications" || p.path.startsWith("applications/")) {
+      applicationsPages.push(p);
+    } else {
+      vaultPages.push(p);
     }
-    childrenByParent.get(parentKey)!.push(p);
   }
 
-  // Sort helper
   const sortPages = (items: Page[]) => {
     return items.sort((a, b) => {
       if (a.position !== b.position) return a.position - b.position;
@@ -33,42 +39,131 @@ export function buildPageTreeFromPages(
     });
   };
 
-  const buildSubTree = (parentId: string | null): PageTree.Node[] => {
-    const childPages = childrenByParent.get(parentId) || [];
-    const sorted = sortPages(childPages);
+  const buildNodesForSection = (
+    sectionPages: Page[],
+    categoryLabel: string,
+    indexUrl: string
+  ): PageTree.Node[] => {
+    const pagesById = new Map<string, Page>();
+    const childrenByParent = new Map<string | null, Page[]>();
 
-    return sorted.map((p): PageTree.Node => {
-      const url = `${baseUrl}/${p.path}`.replace(/\/+/g, "/");
-      const subChildren = buildSubTree(p.id);
-
-      if (subChildren.length > 0) {
-        const folderNode: PageTree.Folder = {
-          type: "folder",
-          name: p.title,
-          index: {
-            type: "page",
-            name: p.title,
-            url,
-          },
-          children: subChildren,
-        };
-        return folderNode;
+    for (const p of sectionPages) {
+      pagesById.set(p.id, p);
+      const parentKey = p.parentId;
+      if (!childrenByParent.has(parentKey)) {
+        childrenByParent.set(parentKey, []);
       }
+      childrenByParent.get(parentKey)!.push(p);
+    }
 
-      const itemNode: PageTree.Item = {
-        type: "page",
-        name: p.title,
-        url,
-      };
-      return itemNode;
-    });
+    const buildSubTree = (parentId: string | null): PageTree.Node[] => {
+      const childPages = childrenByParent.get(parentId) || [];
+      const sorted = sortPages(childPages);
+
+      return sorted.map((p): PageTree.Node => {
+        const url = `${baseUrl}/${p.path}`.replace(/\/+/g, "/");
+        const subChildren = buildSubTree(p.id);
+
+        if (subChildren.length > 0) {
+          const folderNode: PageTree.Folder = {
+            type: "folder",
+            name: p.title,
+            index: {
+              type: "page",
+              name: p.title,
+              url,
+            },
+            children: subChildren,
+          };
+          return folderNode;
+        }
+
+        const itemNode: PageTree.Item = {
+          type: "page",
+          name: p.title,
+          url,
+        };
+        return itemNode;
+      });
+    };
+
+    const rootNodes = buildSubTree(null);
+
+    // If there is an overview page, ensure it is represented
+    const nodes: PageTree.Node[] = [
+      {
+        type: "separator",
+        name: categoryLabel,
+      },
+      ...rootNodes,
+    ];
+
+    return nodes;
   };
 
-  const rootChildren = buildSubTree(null);
+  const vaultChildren = buildNodesForSection(
+    vaultPages,
+    "Introduction",
+    `${baseUrl}`
+  );
+
+  const commandsChildren = buildNodesForSection(
+    commandsPages,
+    "Runbooks & Tools",
+    `${baseUrl}/commands`
+  );
+
+  const applicationsChildren = buildNodesForSection(
+    applicationsPages,
+    "Career & Preparation",
+    `${baseUrl}/applications`
+  );
+
+  const vaultFolder: PageTree.Folder = {
+    type: "folder",
+    name: "Vault",
+    description: "Personal docs & knowledge base",
+    root: true,
+    defaultOpen: true,
+    index: {
+      type: "page",
+      name: "Overview",
+      url: `${baseUrl}`,
+    },
+    children: vaultChildren,
+  };
+
+  const commandsFolder: PageTree.Folder = {
+    type: "folder",
+    name: "Commands",
+    description: "System commands & CLI snippets",
+    root: true,
+    defaultOpen: true,
+    index: {
+      type: "page",
+      name: "Commands & Runbooks",
+      url: `${baseUrl}/commands`,
+    },
+    children: commandsChildren,
+  };
+
+  const applicationsFolder: PageTree.Folder = {
+    type: "folder",
+    name: "Applications",
+    description: "Job applications, questions & profiles",
+    root: true,
+    defaultOpen: true,
+    index: {
+      type: "page",
+      name: "Applications Overview",
+      url: `${baseUrl}/applications`,
+    },
+    children: applicationsChildren,
+  };
 
   return {
     name: "vdocs",
-    children: rootChildren,
+    children: [vaultFolder, commandsFolder, applicationsFolder],
   };
 }
 

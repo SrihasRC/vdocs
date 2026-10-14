@@ -56,7 +56,7 @@ export function CommandBlockRenderer({ block }: CommandBlockProps) {
       </div>
 
       {/* Terminal Block */}
-      <div className="relative rounded-xl border border-fd-border bg-[#0d0d0f] shadow-inner overflow-hidden">
+      <div className="relative rounded-lg border border-fd-border bg-[#0d0d0f] shadow-inner overflow-hidden">
         {/* Terminal Header */}
         <div className="flex items-center justify-between px-3.5 py-2 border-b border-fd-border/60 bg-[#121215]/80 text-xs text-fd-muted-foreground">
           <div className="flex items-center gap-2">

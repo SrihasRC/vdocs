@@ -34,7 +34,7 @@ export function NoteBlockRenderer({ block }: NoteBlockProps) {
           components={{
             pre({ children, ...props }) {
               return (
-                <div className="relative group/code my-4 rounded-xl border border-fd-border bg-[#0d0d0f] p-4 text-sm font-mono overflow-x-auto shadow-inner">
+                <div className="relative group/code my-4 rounded-lg border border-fd-border bg-[#0d0d0f] p-4 text-sm font-mono overflow-x-auto shadow-inner">
                   <pre {...props}>{children}</pre>
                 </div>
               );

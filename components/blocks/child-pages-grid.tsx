@@ -46,7 +46,7 @@ export function ChildPagesGrid({
           <Link
             key={page.id}
             href={`/docs/${page.path}`.replace(/\/+/g, "/")}
-            className="group relative flex flex-col justify-between rounded-xl border border-fd-border bg-fd-card/40 p-4 transition-all hover:bg-fd-accent/40 hover:border-amber-400/40 hover:shadow-sm"
+            className="group relative flex flex-col justify-between rounded-lg border border-fd-border bg-fd-card/40 p-4 transition-all hover:bg-fd-accent/40 hover:border-amber-400/40 hover:shadow-sm"
           >
             <div>
               <div className="flex items-center justify-between mb-2">
