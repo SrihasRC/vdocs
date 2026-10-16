@@ -355,16 +355,30 @@ export function PageEditorView({
               </Button>
             </>
           ) : (
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={() => setIsEditing(true)}
-              className="h-8 text-xs gap-1.5 hover:border-amber-400/40 hover:text-amber-400 transition-colors"
-            >
-              <Edit3 className="h-3.5 w-3.5 text-amber-400" />
-              Edit Page (E)
-            </Button>
+            <div className="flex items-center gap-2">
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={() => setShowSettings(true)}
+                className="h-8 text-xs gap-1.5 text-fd-muted-foreground hover:text-fd-foreground"
+                title="Page Settings & Export"
+              >
+                <Settings className="h-3.5 w-3.5" />
+                <span className="hidden sm:inline">Settings</span>
+              </Button>
+
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => setIsEditing(true)}
+                className="h-8 text-xs gap-1.5 hover:border-amber-400/40 hover:text-amber-400 transition-colors"
+              >
+                <Edit3 className="h-3.5 w-3.5 text-amber-400" />
+                Edit Page (E)
+              </Button>
+            </div>
           )}
         </div>
       </div>

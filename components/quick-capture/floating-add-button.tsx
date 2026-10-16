@@ -36,7 +36,7 @@ export function FloatingAddButton() {
         type="button"
         onClick={() => setOpen(true)}
         className={cn(
-          "fixed bottom-6 right-6 z-40 flex h-12 w-12 items-center justify-center rounded-full border border-fd-border/80 bg-[#121214]/95 text-amber-400 shadow-xl backdrop-blur-md transition-all duration-200",
+          "fixed bottom-6 right-6 max-sm:bottom-[calc(1rem+env(safe-area-inset-bottom,0px))] max-sm:right-4 z-40 flex h-12 w-12 items-center justify-center rounded-full border border-fd-border/80 bg-[#121214]/95 text-amber-400 shadow-xl backdrop-blur-md transition-all duration-200",
           "hover:border-amber-400/50 hover:bg-[#1a1a1d] hover:scale-105 hover:shadow-amber-500/10 active:scale-95 group",
           "focus:outline-none focus:ring-2 focus:ring-amber-400/40"
         )}

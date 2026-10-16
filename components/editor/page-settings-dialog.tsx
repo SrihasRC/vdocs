@@ -14,7 +14,8 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { updatePageMetadata, deletePage } from "@/app/actions/pages";
-import { Trash2, Settings, Loader2 } from "lucide-react";
+import { Trash2, Settings, Loader2, Download, HardDrive } from "lucide-react";
+import { VaultBackupDialog } from "@/components/export/vault-backup-dialog";
 
 interface PageSettingsDialogProps {
   page: {
@@ -45,6 +46,7 @@ export function PageSettingsDialog({
   );
   const [isSaving, setIsSaving] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [showVaultBackup, setShowVaultBackup] = useState(false);
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -94,8 +96,9 @@ export function PageSettingsDialog({
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-md bg-[#111113] border-fd-border text-fd-foreground rounded-lg">
+    <>
+      <Dialog open={open} onOpenChange={onOpenChange}>
+        <DialogContent className="max-w-md bg-[#111113] border-fd-border text-fd-foreground rounded-lg">
         <form onSubmit={handleSave} className="space-y-4">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 text-base font-semibold">
@@ -175,6 +178,39 @@ export function PageSettingsDialog({
                 className="h-8 text-xs bg-fd-background"
               />
             </div>
+
+            {/* Export & Backup Section */}
+            <div className="pt-2 border-t border-fd-border/40 space-y-2">
+              <label className="text-xs font-medium text-fd-muted-foreground block">
+                Export & Backup
+              </label>
+              <div className="flex items-center gap-2 flex-wrap">
+                <a
+                  href={`/api/export?format=md&scope=page&id=${page.id}`}
+                  download
+                  className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md border border-fd-border/70 bg-fd-secondary/30 hover:bg-fd-secondary text-xs text-fd-foreground transition-colors"
+                >
+                  <Download className="h-3 w-3 text-amber-400" />
+                  Download .md
+                </a>
+                <a
+                  href={`/api/export?format=json&scope=page&id=${page.id}`}
+                  download
+                  className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md border border-fd-border/70 bg-fd-secondary/30 hover:bg-fd-secondary text-xs text-fd-foreground transition-colors"
+                >
+                  <Download className="h-3 w-3 text-sky-400" />
+                  Download .json
+                </a>
+                <button
+                  type="button"
+                  onClick={() => setShowVaultBackup(true)}
+                  className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md border border-amber-400/40 bg-amber-400/10 hover:bg-amber-400/20 text-xs text-amber-400 transition-colors"
+                >
+                  <HardDrive className="h-3 w-3" />
+                  Full Vault Backup...
+                </button>
+              </div>
+            </div>
           </div>
 
           <DialogFooter className="flex items-center justify-between gap-2 pt-2 border-t border-fd-border/40">
@@ -214,5 +250,13 @@ export function PageSettingsDialog({
         </form>
       </DialogContent>
     </Dialog>
+
+    <VaultBackupDialog
+      open={showVaultBackup}
+      onOpenChange={setShowVaultBackup}
+      currentPageId={page.id}
+      currentPageTitle={page.title}
+    />
+    </>
   );
 }

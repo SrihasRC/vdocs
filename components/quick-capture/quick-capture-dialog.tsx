@@ -248,15 +248,15 @@ export function QuickCaptureDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
         onKeyDown={handleKeyDown}
-        className="max-w-xl bg-[#111113] border-fd-border text-fd-foreground rounded-xl shadow-2xl p-0 overflow-hidden"
+        className="max-w-xl w-[95vw] sm:w-full max-h-[92vh] flex flex-col bg-[#111113] border-fd-border text-fd-foreground rounded-xl shadow-2xl p-0 overflow-hidden"
       >
-        <DialogHeader className="p-4 pb-3 border-b border-fd-border/60">
+        <DialogHeader className="p-4 pb-3 border-b border-fd-border/60 shrink-0">
           <div className="flex items-center justify-between">
             <DialogTitle className="flex items-center gap-2 text-base font-semibold">
               <Zap className="h-4 w-4 text-amber-400" />
               Quick Capture
             </DialogTitle>
-            <span className="text-[11px] font-mono text-fd-muted-foreground mr-6">
+            <span className="text-[11px] font-mono text-fd-muted-foreground mr-6 hidden sm:inline">
               <kbd className="px-1 py-0.5 rounded border border-fd-border bg-fd-secondary/30">
                 Cmd+Enter
               </kbd>{" "}
@@ -268,7 +268,7 @@ export function QuickCaptureDialog({
           </DialogDescription>
 
           {/* Mode Tabs */}
-          <div className="flex items-center gap-1 mt-3 p-1 rounded-lg bg-fd-secondary/30 border border-fd-border/70 w-fit">
+          <div className="flex items-center gap-1 mt-3 p-1 rounded-lg bg-fd-secondary/30 border border-fd-border/70 w-fit max-w-full overflow-x-auto">
             <button
               type="button"
               onClick={() => {
