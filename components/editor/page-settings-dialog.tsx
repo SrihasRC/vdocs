@@ -213,14 +213,14 @@ export function PageSettingsDialog({
             </div>
           </div>
 
-          <DialogFooter className="flex items-center justify-between gap-2 pt-2 border-t border-fd-border/40">
+          <div className="flex items-center justify-between gap-2 pt-3 border-t border-fd-border/40">
             <Button
               type="button"
               variant="ghost"
               size="sm"
               onClick={handleDelete}
               disabled={isDeleting || isSaving}
-              className="text-destructive hover:bg-destructive/10 text-xs gap-1.5"
+              className="text-destructive hover:bg-destructive/10 text-xs gap-1.5 cursor-pointer"
             >
               <Trash2 className="h-3.5 w-3.5" />
               Delete Page
@@ -232,7 +232,7 @@ export function PageSettingsDialog({
                 variant="outline"
                 size="sm"
                 onClick={() => onOpenChange(false)}
-                className="text-xs h-8"
+                className="text-xs h-8 cursor-pointer"
               >
                 Cancel
               </Button>
@@ -240,13 +240,13 @@ export function PageSettingsDialog({
                 type="submit"
                 size="sm"
                 disabled={isSaving}
-                className="text-xs h-8 bg-amber-400 text-black hover:bg-amber-300 font-semibold gap-1.5"
+                className="text-xs h-8 bg-amber-400 text-black hover:bg-amber-300 font-semibold gap-1.5 cursor-pointer"
               >
                 {isSaving && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
                 Save Changes
               </Button>
             </div>
-          </DialogFooter>
+          </div>
         </form>
       </DialogContent>
     </Dialog>

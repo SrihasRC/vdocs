@@ -13,15 +13,10 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import {
-  Zap,
-  Terminal,
-  HelpCircle,
-  FileText,
   Loader2,
   Check,
   ShieldAlert,
   ArrowRight,
-  Sparkles,
 } from "lucide-react";
 import { parseTerminalPaste, type SmartPasteResult } from "@/lib/smart-paste";
 import {
@@ -564,7 +559,7 @@ export function QuickCaptureDialog({
           )}
 
           {/* Destination Selector */}
-          <div className="pt-3 border-t border-fd-border/60 flex items-center justify-between gap-3">
+          <div className="flex items-center justify-between gap-3 pt-1">
             <span className="text-xs font-medium text-fd-muted-foreground shrink-0">
               Save To Page:
             </span>
@@ -572,7 +567,7 @@ export function QuickCaptureDialog({
               value={selectedTargetId}
               onChange={(e) => setSelectedTargetId(e.target.value)}
               disabled={loadingTargets}
-              className="flex-1 h-8 rounded-md border border-fd-border bg-fd-background px-2.5 text-xs text-fd-foreground focus:outline-none focus:ring-1 focus:ring-fd-ring truncate"
+              className="flex-1 h-8 rounded-md border border-fd-border bg-fd-background px-2.5 text-xs text-fd-foreground focus:outline-none focus:ring-1 focus:ring-fd-ring truncate cursor-pointer"
             >
               {targets.map((t) => (
                 <option key={t.id} value={t.id}>
@@ -583,13 +578,14 @@ export function QuickCaptureDialog({
           </div>
         </div>
 
-        <DialogFooter className="p-4 sm:p-5 pt-3 border-t border-fd-border/60 bg-fd-secondary/10 flex items-center justify-between">
+        {/* Dialog Bottom Footer */}
+        <div className="flex items-center justify-between gap-3 px-4 sm:px-5 py-3 border-t border-fd-border/60 bg-fd-secondary/15 rounded-b-xl shrink-0">
           <Button
             type="button"
             variant="ghost"
             size="sm"
             onClick={() => onOpenChange(false)}
-            className="h-8 text-xs cursor-pointer text-fd-muted-foreground hover:text-fd-foreground"
+            className="h-8 px-3 text-xs cursor-pointer text-fd-muted-foreground hover:text-fd-foreground hover:bg-fd-accent/40"
           >
             Cancel (Esc)
           </Button>
@@ -599,12 +595,12 @@ export function QuickCaptureDialog({
             size="sm"
             onClick={handleCapture}
             disabled={isSubmitting}
-            className="h-8 text-xs cursor-pointer bg-amber-400 text-black hover:bg-amber-300 font-semibold gap-1.5 shadow-sm"
+            className="h-8 px-3.5 text-xs cursor-pointer bg-amber-400 text-black hover:bg-amber-300 font-semibold gap-1.5 shadow-xs"
           >
             {isSubmitting && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
             Capture & Save (Cmd+Enter)
           </Button>
-        </DialogFooter>
+        </div>
       </DialogContent>
     </Dialog>
   );

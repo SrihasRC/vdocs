@@ -150,13 +150,13 @@ export function CreatePageDialog({
             </div>
           </div>
 
-          <DialogFooter className="flex items-center justify-end gap-2 pt-2 border-t border-fd-border/40">
+          <div className="flex items-center justify-end gap-2 pt-3 border-t border-fd-border/40">
             <Button
               type="button"
               variant="outline"
               size="sm"
               onClick={() => onOpenChange(false)}
-              className="text-xs h-8"
+              className="text-xs h-8 cursor-pointer"
             >
               Cancel
             </Button>
@@ -164,12 +164,12 @@ export function CreatePageDialog({
               type="submit"
               size="sm"
               disabled={isCreating}
-              className="text-xs h-8 bg-amber-400 text-black hover:bg-amber-300 font-semibold gap-1.5"
+              className="text-xs h-8 bg-amber-400 text-black hover:bg-amber-300 font-semibold gap-1.5 cursor-pointer"
             >
               {isCreating && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
               Create Page
             </Button>
-          </DialogFooter>
+          </div>
         </form>
       </DialogContent>
     </Dialog>

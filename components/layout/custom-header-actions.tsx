@@ -35,7 +35,7 @@ export function CustomHeaderActions({ className, ...props }: React.ComponentProp
             target={item.external ? "_blank" : undefined}
             rel={item.external ? "noreferrer noopener" : undefined}
             aria-label={item.label}
-            className="inline-flex size-8 cursor-pointer items-center justify-center rounded-lg text-fd-muted-foreground hover:bg-fd-accent/60 hover:text-fd-accent-foreground transition-colors max-lg:hidden"
+            className="inline-flex size-5 cursor-pointer items-center justify-center rounded-lg text-fd-muted-foreground hover:bg-fd-accent/60 hover:text-fd-accent-foreground transition-colors max-lg:hidden"
           >
             {item.icon}
           </a>
