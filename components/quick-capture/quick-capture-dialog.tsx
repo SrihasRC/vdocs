@@ -248,12 +248,11 @@ export function QuickCaptureDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
         onKeyDown={handleKeyDown}
-        className="max-w-xl w-[95vw] sm:w-full max-h-[92vh] flex flex-col bg-[#111113] border-fd-border text-fd-foreground rounded-xl shadow-2xl p-0 overflow-hidden"
+        className="sm:max-w-2xl w-[95vw] max-h-[90vh] flex flex-col bg-[#111113] border-fd-border text-fd-foreground rounded-xl shadow-2xl p-0 overflow-hidden"
       >
-        <DialogHeader className="p-4 pb-3 border-b border-fd-border/60 shrink-0">
+        <DialogHeader className="p-4 sm:p-5 pb-3 border-b border-fd-border/60 shrink-0">
           <div className="flex items-center justify-between">
-            <DialogTitle className="flex items-center gap-2 text-base font-semibold">
-              <Zap className="h-4 w-4 text-amber-400" />
+            <DialogTitle className="text-base font-semibold">
               Quick Capture
             </DialogTitle>
             <span className="text-[11px] font-mono text-fd-muted-foreground mr-6 hidden sm:inline">
@@ -263,12 +262,12 @@ export function QuickCaptureDialog({
               to save
             </span>
           </div>
-          <DialogDescription className="text-xs text-fd-muted-foreground">
+          <DialogDescription className="text-xs text-fd-muted-foreground mt-0.5">
             Instantly capture terminal snippets, Q&A answers, or notes into your vault.
           </DialogDescription>
 
           {/* Mode Tabs */}
-          <div className="flex items-center gap-1 mt-3 p-1 rounded-lg bg-fd-secondary/30 border border-fd-border/70 w-fit max-w-full overflow-x-auto">
+          <div className="flex items-center gap-1 mt-3 p-1 rounded-lg bg-fd-secondary/40 border border-fd-border/70 w-fit max-w-full overflow-x-auto">
             <button
               type="button"
               onClick={() => {
@@ -276,13 +275,12 @@ export function QuickCaptureDialog({
                 setSuccessInfo(null);
               }}
               className={cn(
-                "flex items-center gap-1.5 px-3 py-1 rounded-md text-xs font-medium transition-colors",
+                "cursor-pointer px-3 py-1.5 rounded-md text-xs font-medium transition-colors",
                 tab === "smart"
-                  ? "bg-fd-background text-fd-foreground shadow-sm font-semibold"
+                  ? "bg-fd-background text-fd-foreground shadow-xs font-semibold"
                   : "text-fd-muted-foreground hover:text-fd-foreground"
               )}
             >
-              <Sparkles className="h-3.5 w-3.5 text-amber-400" />
               Smart Paste
             </button>
             <button
@@ -292,13 +290,12 @@ export function QuickCaptureDialog({
                 setSuccessInfo(null);
               }}
               className={cn(
-                "flex items-center gap-1.5 px-3 py-1 rounded-md text-xs font-medium transition-colors",
+                "cursor-pointer px-3 py-1.5 rounded-md text-xs font-medium transition-colors",
                 tab === "command"
-                  ? "bg-fd-background text-fd-foreground shadow-sm font-semibold"
+                  ? "bg-fd-background text-fd-foreground shadow-xs font-semibold"
                   : "text-fd-muted-foreground hover:text-fd-foreground"
               )}
             >
-              <Terminal className="h-3.5 w-3.5 text-amber-400" />
               Command
             </button>
             <button
@@ -308,13 +305,12 @@ export function QuickCaptureDialog({
                 setSuccessInfo(null);
               }}
               className={cn(
-                "flex items-center gap-1.5 px-3 py-1 rounded-md text-xs font-medium transition-colors",
+                "cursor-pointer px-3 py-1.5 rounded-md text-xs font-medium transition-colors",
                 tab === "qa"
-                  ? "bg-fd-background text-fd-foreground shadow-sm font-semibold"
+                  ? "bg-fd-background text-fd-foreground shadow-xs font-semibold"
                   : "text-fd-muted-foreground hover:text-fd-foreground"
               )}
             >
-              <HelpCircle className="h-3.5 w-3.5 text-amber-400" />
               Q&A
             </button>
             <button
@@ -324,13 +320,12 @@ export function QuickCaptureDialog({
                 setSuccessInfo(null);
               }}
               className={cn(
-                "flex items-center gap-1.5 px-3 py-1 rounded-md text-xs font-medium transition-colors",
+                "cursor-pointer px-3 py-1.5 rounded-md text-xs font-medium transition-colors",
                 tab === "note"
-                  ? "bg-fd-background text-fd-foreground shadow-sm font-semibold"
+                  ? "bg-fd-background text-fd-foreground shadow-xs font-semibold"
                   : "text-fd-muted-foreground hover:text-fd-foreground"
               )}
             >
-              <FileText className="h-3.5 w-3.5 text-amber-400" />
               Note
             </button>
           </div>
@@ -357,13 +352,13 @@ export function QuickCaptureDialog({
         )}
 
         {/* Tab Form Contents */}
-        <div className="p-4 space-y-3.5 max-h-[60vh] overflow-y-auto">
+        <div className="p-4 sm:p-5 space-y-4 max-h-[60vh] overflow-y-auto overflow-x-hidden">
           {tab === "smart" && (
-            <div className="space-y-3">
+            <div className="space-y-3.5">
               <div className="space-y-1.5">
                 <label className="text-xs font-medium text-fd-muted-foreground flex items-center justify-between">
                   <span>Paste Terminal Output or Commands</span>
-                  <span className="text-[11px] text-amber-400/80">
+                  <span className="text-[11px] text-fd-muted-foreground">
                     Auto-strips $ and # prompts
                   </span>
                 </label>
@@ -371,25 +366,25 @@ export function QuickCaptureDialog({
                   value={rawPaste}
                   onChange={(e) => handleRawPasteChange(e.target.value)}
                   placeholder={`$ sudo pacman -Syu\n# Clean package cache\n$ sudo pacman -Sc`}
-                  className="font-mono text-xs h-28 bg-[#0d0d0f] border-fd-border resize-none"
+                  className="font-mono text-xs h-28 bg-[#0e0e10] border-fd-border resize-none focus-visible:ring-1 focus-visible:ring-fd-ring"
                   autoFocus
                 />
               </div>
 
               {rawPaste.trim() && smartResult && (
-                <div className="p-3 rounded-lg border border-fd-border/70 bg-fd-secondary/20 space-y-2.5">
-                  <div className="flex items-center justify-between">
+                <div className="p-3.5 rounded-lg border border-fd-border/70 bg-fd-secondary/20 space-y-3">
+                  <div className="flex items-center justify-between gap-2 flex-wrap">
                     <span className="text-xs font-medium text-fd-muted-foreground">
                       Detected Format
                     </span>
-                    <div className="flex items-center gap-1 rounded border border-fd-border bg-fd-background p-0.5">
+                    <div className="flex items-center gap-1 rounded-md border border-fd-border/70 bg-fd-background p-0.5">
                       <button
                         type="button"
                         onClick={() => setSmartFormat("command")}
                         className={cn(
-                          "px-2 py-0.5 text-[11px] rounded font-medium transition-colors",
+                          "cursor-pointer px-2.5 py-1 text-xs rounded font-medium transition-colors",
                           smartFormat === "command"
-                            ? "bg-amber-400 text-black font-semibold"
+                            ? "bg-fd-secondary text-fd-foreground font-semibold"
                             : "text-fd-muted-foreground hover:text-fd-foreground"
                         )}
                       >
@@ -399,9 +394,9 @@ export function QuickCaptureDialog({
                         type="button"
                         onClick={() => setSmartFormat("steps")}
                         className={cn(
-                          "px-2 py-0.5 text-[11px] rounded font-medium transition-colors",
+                          "cursor-pointer px-2.5 py-1 text-xs rounded font-medium transition-colors",
                           smartFormat === "steps"
-                            ? "bg-amber-400 text-black font-semibold"
+                            ? "bg-fd-secondary text-fd-foreground font-semibold"
                             : "text-fd-muted-foreground hover:text-fd-foreground"
                         )}
                       >
@@ -588,13 +583,13 @@ export function QuickCaptureDialog({
           </div>
         </div>
 
-        <DialogFooter className="p-4 pt-3 border-t border-fd-border/60 bg-fd-card/40 flex items-center justify-between">
+        <DialogFooter className="p-4 sm:p-5 pt-3 border-t border-fd-border/60 bg-fd-secondary/10 flex items-center justify-between">
           <Button
             type="button"
             variant="ghost"
             size="sm"
             onClick={() => onOpenChange(false)}
-            className="h-8 text-xs text-fd-muted-foreground hover:text-fd-foreground"
+            className="h-8 text-xs cursor-pointer text-fd-muted-foreground hover:text-fd-foreground"
           >
             Cancel (Esc)
           </Button>
@@ -604,13 +599,9 @@ export function QuickCaptureDialog({
             size="sm"
             onClick={handleCapture}
             disabled={isSubmitting}
-            className="h-8 text-xs bg-amber-400 text-black hover:bg-amber-300 font-semibold gap-1.5"
+            className="h-8 text-xs cursor-pointer bg-amber-400 text-black hover:bg-amber-300 font-semibold gap-1.5 shadow-sm"
           >
-            {isSubmitting ? (
-              <Loader2 className="h-3.5 w-3.5 animate-spin" />
-            ) : (
-              <Zap className="h-3.5 w-3.5" />
-            )}
+            {isSubmitting && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
             Capture & Save (Cmd+Enter)
           </Button>
         </DialogFooter>

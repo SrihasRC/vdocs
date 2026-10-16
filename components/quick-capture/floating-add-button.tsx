@@ -36,14 +36,14 @@ export function FloatingAddButton() {
         type="button"
         onClick={() => setOpen(true)}
         className={cn(
-          "fixed bottom-6 right-6 max-sm:bottom-[calc(1rem+env(safe-area-inset-bottom,0px))] max-sm:right-4 z-40 flex h-12 w-12 items-center justify-center rounded-full border border-fd-border/80 bg-[#121214]/95 text-amber-400 shadow-xl backdrop-blur-md transition-all duration-200",
-          "hover:border-amber-400/50 hover:bg-[#1a1a1d] hover:scale-105 hover:shadow-amber-500/10 active:scale-95 group",
-          "focus:outline-none focus:ring-2 focus:ring-amber-400/40"
+          "fixed bottom-6 right-6 max-sm:bottom-[calc(1rem+env(safe-area-inset-bottom,0px))] max-sm:right-4 z-40 flex h-11 w-11 cursor-pointer items-center justify-center rounded-full border border-fd-border bg-[#131315] text-amber-400 shadow-lg transition-all duration-150",
+          "hover:bg-[#1a1a1d] hover:border-fd-border/80 hover:text-amber-300 active:scale-95 group",
+          "focus:outline-none focus-visible:ring-2 focus-visible:ring-fd-ring"
         )}
         title="Quick Capture (Alt + C)"
         aria-label="Quick Capture"
       >
-        <Plus className="h-5 w-5 transition-transform duration-200 group-hover:rotate-90 group-hover:text-amber-300" />
+        <Plus className="h-5 w-5 transition-transform duration-150 group-hover:rotate-90" />
       </button>
 
       <QuickCaptureDialog open={open} onOpenChange={setOpen} />
