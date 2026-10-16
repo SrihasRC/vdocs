@@ -15,18 +15,64 @@ export function buildPageTreeFromPages(
   allPages: Page[],
   baseUrl: string = "/docs"
 ): PageTree.Root {
-  const publishedPages = allPages.filter((p) => p.status === "published");
+  // 1. Discover all root categories
+  // Default recognized categories
+  const knownCategories = new Map<
+    string,
+    { rootName: string; rootDesc: string; categoryLabel: string; sortOrder: number }
+  >();
 
-  // Partition pages by root section
+  knownCategories.set("commands", {
+    rootName: "Commands",
+    rootDesc: "System commands & CLI snippets",
+    categoryLabel: "Runbooks & Tools",
+    sortOrder: 1,
+  });
+
+  knownCategories.set("applications", {
+    rootName: "Applications",
+    rootDesc: "Job applications, questions & profiles",
+    categoryLabel: "Career & Preparation",
+    sortOrder: 2,
+  });
+
+  // Dynamically discover any other custom root categories
+  let customOrder = 3;
+  for (const p of allPages) {
+    if (!p.path || p.path === "quickstart" || p.path === "inbox") continue;
+    const firstSegment = p.path.split("/")[0];
+    if (firstSegment && !knownCategories.has(firstSegment)) {
+      const rootPage = allPages.find((ap) => ap.path === firstSegment);
+      knownCategories.set(firstSegment, {
+        rootName: rootPage
+          ? rootPage.title
+          : firstSegment.charAt(0).toUpperCase() + firstSegment.slice(1),
+        rootDesc: `${firstSegment} documentation`,
+        categoryLabel: "Documents",
+        sortOrder: customOrder++,
+      });
+    }
+  }
+
+  // 2. Partition pages into buckets by category
   const vaultPages: Page[] = [];
-  const commandsPages: Page[] = [];
-  const applicationsPages: Page[] = [];
+  const categoryBuckets = new Map<string, Page[]>();
 
-  for (const p of publishedPages) {
-    if (p.path === "commands" || p.path.startsWith("commands/")) {
-      commandsPages.push(p);
-    } else if (p.path === "applications" || p.path.startsWith("applications/")) {
-      applicationsPages.push(p);
+  for (const catKey of knownCategories.keys()) {
+    categoryBuckets.set(catKey, []);
+  }
+
+  for (const p of allPages) {
+    let matchedCategory: string | null = null;
+    for (const catKey of knownCategories.keys()) {
+      if (p.path === catKey || p.path.startsWith(`${catKey}/`)) {
+        matchedCategory = catKey;
+        break;
+      }
+    }
+
+    if (matchedCategory && categoryBuckets.has(matchedCategory)) {
+      categoryBuckets.get(matchedCategory)!.push(p);
     } else {
       vaultPages.push(p);
     }
@@ -52,12 +98,11 @@ export function buildPageTreeFromPages(
     rootDesc: string;
     categoryLabel: string;
   }): PageTree.Folder => {
-    // Locate the section index page (e.g. path === "" for vault, path === "commands" for commands)
+    // Locate the section index page
     const indexPage =
       sectionPages.find((p) => p.path === sectionKey) ||
       sectionPages.find((p) => p.path === "");
 
-    // Child items should NOT include the index page itself to avoid duplicate items
     const otherPages = sectionPages.filter((p) => p !== indexPage);
 
     const pagesById = new Map<string, Page>();
@@ -69,11 +114,9 @@ export function buildPageTreeFromPages(
 
     for (const p of otherPages) {
       let parentKey = p.parentId;
-      // If parentId is the index page or null, treat as top-level in this section
       if (!parentKey || (indexPage && parentKey === indexPage.id)) {
         parentKey = null;
       } else if (!pagesById.has(parentKey)) {
-        // Fallback: check by path parent
         const parts = p.path.split("/");
         parts.pop();
         const parentPath = parts.join("/");
@@ -94,14 +137,15 @@ export function buildPageTreeFromPages(
       return sorted.map((p): PageTree.Node => {
         const url = `${baseUrl}/${p.path}`.replace(/\/+/g, "/").replace(/\/$/, "");
         const subChildren = buildSubTree(p.id);
+        const displayName = p.status === "draft" ? `${p.title} (Draft)` : p.title;
 
         if (subChildren.length > 0) {
           const folderNode: PageTree.Folder = {
             type: "folder",
-            name: p.title,
+            name: displayName,
             index: {
               type: "page",
-              name: p.title,
+              name: displayName,
               url,
             },
             children: subChildren,
@@ -112,7 +156,7 @@ export function buildPageTreeFromPages(
 
         const itemNode: PageTree.Item = {
           type: "page",
-          name: p.title,
+          name: displayName,
           url,
         };
         (itemNode as any).$id = p.id;
@@ -126,12 +170,11 @@ export function buildPageTreeFromPages(
       ? `${baseUrl}/${sectionKey}`.replace(/\/+/g, "/")
       : baseUrl;
 
-    // In the sidebar, include the main index page at the top of the section!
     const sectionIndexItem: PageTree.Node[] = indexPage
       ? [
           {
             type: "page",
-            name: indexPage.title,
+            name: indexPage.status === "draft" ? `${indexPage.title} (Draft)` : indexPage.title,
             url: sectionUrl,
           },
         ]
@@ -162,11 +205,12 @@ export function buildPageTreeFromPages(
       },
       children,
     };
-    (folder as any).$id = `root-${rootName.toLowerCase()}`;
+    (folder as any).$id = `root-${sectionKey || "vault"}`;
 
     return folder;
   };
 
+  // Build Vault Section
   const vaultFolder = buildSection({
     sectionPages: vaultPages,
     sectionKey: "",
@@ -175,25 +219,24 @@ export function buildPageTreeFromPages(
     categoryLabel: "Introduction",
   });
 
-  const commandsFolder = buildSection({
-    sectionPages: commandsPages,
-    sectionKey: "commands",
-    rootName: "Commands",
-    rootDesc: "System commands & CLI snippets",
-    categoryLabel: "Runbooks & Tools",
-  });
+  // Build All Category Sections
+  const sortedCategories = Array.from(knownCategories.entries()).sort(
+    (a, b) => a[1].sortOrder - b[1].sortOrder
+  );
 
-  const applicationsFolder = buildSection({
-    sectionPages: applicationsPages,
-    sectionKey: "applications",
-    rootName: "Applications",
-    rootDesc: "Job applications, questions & profiles",
-    categoryLabel: "Career & Preparation",
+  const categoryFolders = sortedCategories.map(([catKey, catInfo]) => {
+    return buildSection({
+      sectionPages: categoryBuckets.get(catKey) || [],
+      sectionKey: catKey,
+      rootName: catInfo.rootName,
+      rootDesc: catInfo.rootDesc,
+      categoryLabel: catInfo.categoryLabel,
+    });
   });
 
   const tree: PageTree.Root = {
     name: "vdocs",
-    children: [vaultFolder, commandsFolder, applicationsFolder],
+    children: [vaultFolder, ...categoryFolders],
   };
 
   return tree;
@@ -202,7 +245,7 @@ export function buildPageTreeFromPages(
 import { connection } from "next/server";
 
 /**
- * Fetches all published pages from the database and returns the Fumadocs PageTree.
+ * Fetches all pages from the database and returns the Fumadocs PageTree.
  * If the database has no pages, it seeds initial starter documentation.
  */
 export async function getDbPageTree(baseUrl: string = "/docs"): Promise<PageTree.Root> {
@@ -211,7 +254,6 @@ export async function getDbPageTree(baseUrl: string = "/docs"): Promise<PageTree
     let dbPages = await db
       .select()
       .from(pages)
-      .where(eq(pages.status, "published"))
       .orderBy(asc(pages.position));
 
     if (dbPages.length === 0) {
@@ -219,7 +261,6 @@ export async function getDbPageTree(baseUrl: string = "/docs"): Promise<PageTree
       dbPages = await db
         .select()
         .from(pages)
-        .where(eq(pages.status, "published"))
         .orderBy(asc(pages.position));
     }
 
@@ -227,7 +268,7 @@ export async function getDbPageTree(baseUrl: string = "/docs"): Promise<PageTree
 
     // Compute version hash for Fumadocs TreeContextProvider useMemo invalidation
     const versionKey = `${dbPages.length}-${dbPages
-      .map((p) => `${p.id}:${p.updatedAt?.getTime?.() || 0}`)
+      .map((p) => `${p.id}:${p.updatedAt?.getTime?.() || 0}:${p.status}`)
       .join(",")}`;
     (tree as any).$id = versionKey;
 

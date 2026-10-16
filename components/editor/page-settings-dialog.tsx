@@ -88,7 +88,8 @@ export function PageSettingsDialog({
 
     if (res.success) {
       onOpenChange(false);
-      router.push("/docs");
+      const target = res.parentPath ? `/docs/${res.parentPath}` : "/docs";
+      router.push(target);
       router.refresh();
     } else {
       alert(res.error || "Failed to delete page");

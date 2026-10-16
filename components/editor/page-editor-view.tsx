@@ -24,7 +24,8 @@ import { SortableBlock } from "./sortable-block";
 import { AddBlockBar } from "./add-block-bar";
 import { PageSettingsDialog } from "./page-settings-dialog";
 import { CreatePageDialog } from "./create-page-dialog";
-import { savePageBlocks } from "@/app/actions/pages";
+import { savePageBlocks, togglePageStatus } from "@/app/actions/pages";
+import { DraftBanner } from "@/components/blocks/draft-banner";
 import { Button } from "@/components/ui/button";
 import {
   Edit3,
@@ -33,6 +34,7 @@ import {
   Settings,
   Loader2,
   Sparkles,
+  Plus,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -57,6 +59,27 @@ export function PageEditorView({
   // Dialog states
   const [showSettings, setShowSettings] = useState(false);
   const [showCreateSubpage, setShowCreateSubpage] = useState(false);
+
+  // Document Status State
+  const [pageStatus, setPageStatus] = useState<string>(page.status || "published");
+  const [isTogglingStatus, setIsTogglingStatus] = useState(false);
+
+  const handleToggleStatus = async () => {
+    if (isTogglingStatus) return;
+    setIsTogglingStatus(true);
+    try {
+      const res = await togglePageStatus(page.id);
+      if (res.success && res.status) {
+        setPageStatus(res.status);
+        page.status = res.status;
+        router.refresh();
+      }
+    } catch (err) {
+      console.error("Failed to toggle status:", err);
+    } finally {
+      setIsTogglingStatus(false);
+    }
+  };
 
   // Keep a ref to latest blocks for save callbacks
   const blocksRef = useRef(blocks);
@@ -282,6 +305,28 @@ export function PageEditorView({
       {/* Top Action Bar */}
       <div className="flex items-center justify-between gap-3 mb-6 pb-3 border-b border-fd-border/60">
         <div className="flex items-center gap-2">
+          {/* Status Badge (1-click toggle) */}
+          <button
+            type="button"
+            onClick={handleToggleStatus}
+            disabled={isTogglingStatus}
+            title={pageStatus === "draft" ? "Draft (click to publish)" : "Published (click to unpublish)"}
+            className={cn(
+              "inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium border transition-colors cursor-pointer select-none",
+              pageStatus === "draft"
+                ? "bg-amber-500/10 text-amber-400 border-amber-500/30 hover:bg-amber-500/20"
+                : "bg-emerald-500/10 text-emerald-400 border-emerald-500/30 hover:bg-emerald-500/20"
+            )}
+          >
+            <span
+              className={cn(
+                "h-1.5 w-1.5 rounded-full",
+                pageStatus === "draft" ? "bg-amber-400" : "bg-emerald-400"
+              )}
+            />
+            <span className="capitalize">{pageStatus}</span>
+          </button>
+
           {isEditing ? (
             <div className="inline-flex items-center gap-2 rounded-full border border-amber-500/40 bg-amber-500/10 px-2.5 py-0.5 text-xs font-medium text-amber-400">
               <span className="relative flex h-2 w-2">
@@ -358,6 +403,18 @@ export function PageEditorView({
             <div className="flex items-center gap-2">
               <Button
                 type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => setShowCreateSubpage(true)}
+                className="h-8 text-xs gap-1.5 hover:border-amber-400/40 hover:text-amber-400 transition-colors"
+                title="Create a new child page under this page"
+              >
+                <Plus className="h-3.5 w-3.5" />
+                <span className="hidden sm:inline">Add Subpage</span>
+              </Button>
+
+              <Button
+                type="button"
                 variant="ghost"
                 size="sm"
                 onClick={() => setShowSettings(true)}
@@ -418,9 +475,13 @@ export function PageEditorView({
       )}
 
       {/* Read Mode View (Kept in DOM so IntersectionObserver stays connected) */}
-      <div className={isEditing ? "hidden" : "block"}>
+      <div className={isEditing ? "hidden" : "block space-y-6"}>
+        <DraftBanner pageId={page.id} initialStatus={pageStatus} />
         <BlockListRenderer blocks={blocks} files={filesMap} />
-        <ChildPagesGrid childrenPages={childPages} />
+        <ChildPagesGrid
+          childrenPages={childPages}
+          onAddSubpage={() => setShowCreateSubpage(true)}
+        />
       </div>
 
       {/* Page Settings & Metadata Dialog */}

@@ -10,13 +10,15 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { CreateCategoryDialog } from "@/components/editor/create-category-dialog";
 import { VaultBackupDialog } from "@/components/export/vault-backup-dialog";
-import { Ellipsis, HardDrive, Monitor, Moon, Sun } from "lucide-react";
+import { Ellipsis, HardDrive, Monitor, Moon, Sun, FolderPlus } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 export function CustomHeaderActions({ className, ...props }: React.ComponentProps<"div">) {
   const { menuItems } = useSpaciousLayout();
   const [backupOpen, setBackupOpen] = useState(false);
+  const [createCategoryOpen, setCreateCategoryOpen] = useState(false);
   const { theme, setTheme } = useTheme();
 
   const iconLinks = menuItems.filter((item) => item.type === "icon");
@@ -55,6 +57,15 @@ export function CustomHeaderActions({ className, ...props }: React.ComponentProp
             sideOffset={8}
             className="w-56 p-1.5 bg-[#121214] border-fd-border text-fd-foreground shadow-xl rounded-xl"
           >
+            {/* New Category */}
+            <DropdownMenuItem
+              onClick={() => setCreateCategoryOpen(true)}
+              className="cursor-pointer gap-2.5 px-2.5 py-2 text-xs rounded-lg text-fd-foreground hover:bg-fd-accent/70 focus:bg-fd-accent/70"
+            >
+              <FolderPlus className="size-3.5 text-amber-400" />
+              <span>New Category...</span>
+            </DropdownMenuItem>
+
             {/* Vault Backup & Export */}
             <DropdownMenuItem
               onClick={() => setBackupOpen(true)}
@@ -119,6 +130,7 @@ export function CustomHeaderActions({ className, ...props }: React.ComponentProp
       </div>
 
       <VaultBackupDialog open={backupOpen} onOpenChange={setBackupOpen} />
+      <CreateCategoryDialog open={createCategoryOpen} onOpenChange={setCreateCategoryOpen} />
     </>
   );
 }

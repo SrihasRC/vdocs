@@ -231,12 +231,80 @@ export async function createPage({
 }
 
 /**
- * Deletes a page and revalidates navigation.
+ * Creates a brand new top-level category page (root section).
  */
-export async function deletePage(pageId: string) {
+export async function createCategory({
+  title,
+  slug,
+  description = "",
+  template = "index",
+}: {
+  title: string;
+  slug: string;
+  description?: string;
+  template?: string;
+}) {
+  try {
+    const cleanSlug = slug
+      .toLowerCase()
+      .trim()
+      .replace(/[^a-z0-9-_]/g, "-")
+      .replace(/-+/g, "-");
+
+    const [existing] = await db
+      .select({ id: pages.id })
+      .from(pages)
+      .where(eq(pages.path, cleanSlug));
+
+    if (existing) {
+      return { success: false, error: `A category or page with path '${cleanSlug}' already exists` };
+    }
+
+    const initialBlocks: Block[] = [
+      {
+        id: `note-${Date.now()}`,
+        type: "note",
+        data: {
+          title: title,
+          markdown: description
+            ? `${description}\n\nBrowse sub-pages and runbooks in this section below.`
+            : `Welcome to **${title}**. Browse sub-pages and runbooks in this section below.`,
+        },
+      },
+    ];
+
+    const searchText = flattenBlocksToSearchText(title, initialBlocks, [cleanSlug]);
+
+    const [newCategory] = await db
+      .insert(pages)
+      .values({
+        parentId: null,
+        slug: cleanSlug,
+        path: cleanSlug,
+        title,
+        template: template || "index",
+        blocks: initialBlocks,
+        tags: [cleanSlug],
+        status: "published",
+        searchText,
+      })
+      .returning();
+
+    revalidatePath("/docs", "layout");
+    return { success: true, page: newCategory };
+  } catch (error: any) {
+    console.error("Failed to create category:", error);
+    return { success: false, error: error?.message || "Failed to create category" };
+  }
+}
+
+/**
+ * Toggles a document between draft and published status.
+ */
+export async function togglePageStatus(pageId: string) {
   try {
     const [page] = await db
-      .select({ path: pages.path })
+      .select({ id: pages.id, status: pages.status, path: pages.path })
       .from(pages)
       .where(eq(pages.id, pageId));
 
@@ -244,10 +312,56 @@ export async function deletePage(pageId: string) {
       return { success: false, error: "Page not found" };
     }
 
+    const nextStatus: "draft" | "published" =
+      page.status === "published" ? "draft" : "published";
+
+    await db
+      .update(pages)
+      .set({
+        status: nextStatus,
+        updatedAt: new Date(),
+      })
+      .where(eq(pages.id, pageId));
+
+    revalidatePath(`/docs/${page.path}`.replace(/\/+/g, "/"), "page");
+    revalidatePath("/docs", "layout");
+
+    return { success: true, status: nextStatus };
+  } catch (error: any) {
+    console.error("Failed to toggle page status:", error);
+    return { success: false, error: error?.message || "Failed to toggle status" };
+  }
+}
+
+/**
+ * Deletes a page and revalidates navigation.
+ */
+export async function deletePage(pageId: string) {
+  try {
+    const [page] = await db
+      .select({ path: pages.path, parentId: pages.parentId })
+      .from(pages)
+      .where(eq(pages.id, pageId));
+
+    if (!page) {
+      return { success: false, error: "Page not found" };
+    }
+
+    let parentPath = "";
+    if (page.parentId) {
+      const [parent] = await db
+        .select({ path: pages.path })
+        .from(pages)
+        .where(eq(pages.id, page.parentId));
+      if (parent) {
+        parentPath = parent.path;
+      }
+    }
+
     await db.delete(pages).where(eq(pages.id, pageId));
 
     revalidatePath("/docs", "layout");
-    return { success: true };
+    return { success: true, parentPath };
   } catch (error: any) {
     console.error("Failed to delete page:", error);
     return { success: false, error: error?.message || "Failed to delete page" };

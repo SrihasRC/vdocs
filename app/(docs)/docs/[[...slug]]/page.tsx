@@ -34,7 +34,7 @@ export default async function Page({ params }: Props) {
   const [dbPage] = await db
     .select()
     .from(pages)
-    .where(and(eq(pages.path, path), eq(pages.status, "published")));
+    .where(eq(pages.path, path));
 
   // 2. Handle database redirect if path was moved or renamed
   if (!dbPage) {
@@ -71,7 +71,7 @@ export default async function Page({ params }: Props) {
         tags: pages.tags,
       })
       .from(pages)
-      .where(and(eq(pages.parentId, dbPage.id), eq(pages.status, "published")))
+      .where(eq(pages.parentId, dbPage.id))
       .orderBy(asc(pages.position));
 
     // Fetch any attached files metadata
@@ -153,7 +153,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const [dbPage] = await db
     .select({ title: pages.title })
     .from(pages)
-    .where(and(eq(pages.path, path), eq(pages.status, "published")));
+    .where(eq(pages.path, path));
 
   if (dbPage) {
     return {
