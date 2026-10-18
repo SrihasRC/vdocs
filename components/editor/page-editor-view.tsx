@@ -24,9 +24,16 @@ import { SortableBlock } from "./sortable-block";
 import { AddBlockBar } from "./add-block-bar";
 import { PageSettingsDialog } from "./page-settings-dialog";
 import { CreatePageDialog } from "./create-page-dialog";
+import { QuickCaptureDialog } from "@/components/quick-capture/quick-capture-dialog";
 import { savePageBlocks } from "@/app/actions/pages";
 import { DraftBanner } from "@/components/blocks/draft-banner";
 import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import {
   Edit3,
   Check,
@@ -35,6 +42,8 @@ import {
   Loader2,
   Sparkles,
   Plus,
+  ChevronDown,
+  FilePlus,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -59,6 +68,19 @@ export function PageEditorView({
   // Dialog states
   const [showSettings, setShowSettings] = useState(false);
   const [showCreateSubpage, setShowCreateSubpage] = useState(false);
+  const [showQuickCapture, setShowQuickCapture] = useState(false);
+
+  // Global shortcut Alt + C for Quick Capture
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.altKey && e.key.toLowerCase() === "c") {
+        e.preventDefault();
+        setShowQuickCapture((prev) => !prev);
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, []);
 
   // Document Status State (synced with PageSettingsDialog and DraftBanner)
   const [pageStatus, setPageStatus] = useState<string>(page.status || "published");
@@ -327,12 +349,13 @@ export function PageEditorView({
             <>
               <Button
                 type="button"
-                variant="ghost"
+                variant="outline"
                 size="sm"
                 onClick={() => setShowSettings(true)}
-                className="h-8 text-xs gap-1.5 text-fd-muted-foreground hover:text-fd-foreground"
+                className="h-8 text-xs gap-1.5 rounded-lg border-fd-border bg-fd-secondary/30 hover:bg-fd-accent/60 text-fd-foreground font-medium cursor-pointer transition-colors"
+                title="Page Settings & Export"
               >
-                <Settings className="h-3.5 w-3.5" />
+                <Settings className="h-3.5 w-3.5 text-amber-400" />
                 Settings
               </Button>
 
@@ -342,7 +365,7 @@ export function PageEditorView({
                 size="sm"
                 onClick={() => saveNow(false)}
                 disabled={isSaving || !hasUnsavedChanges}
-                className="h-8 text-xs gap-1.5"
+                className="h-8 text-xs gap-1.5 rounded-lg border-fd-border bg-fd-secondary/30 hover:bg-fd-accent/60 text-fd-foreground font-medium cursor-pointer transition-colors"
               >
                 {isSaving ? (
                   <Loader2 className="h-3.5 w-3.5 animate-spin" />
@@ -356,48 +379,70 @@ export function PageEditorView({
                 type="button"
                 size="sm"
                 onClick={handleDone}
-                className="h-8 text-xs bg-amber-400 text-black hover:bg-amber-300 font-semibold gap-1.5"
+                className="h-8 text-xs bg-amber-400 text-black hover:bg-amber-300 font-semibold gap-1.5 rounded-lg cursor-pointer transition-colors shadow-xs"
               >
                 <Check className="h-3.5 w-3.5" />
                 Done (Esc)
               </Button>
             </>
           ) : (
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1.5">
+              {/* Quick Capture Button */}
               <Button
                 type="button"
                 variant="outline"
                 size="sm"
-                onClick={() => setShowCreateSubpage(true)}
-                className="h-8 text-xs gap-1.5 hover:border-amber-400/40 hover:text-amber-400 transition-colors"
-                title={isCategoryRoot ? `Create a new document in ${page.title}` : "Create a child document under this page"}
+                onClick={() => setShowQuickCapture(true)}
+                className="h-8 w-8 p-0 rounded-lg border-fd-border bg-fd-secondary/30 hover:bg-fd-accent/60 text-fd-foreground hover:text-amber-400 transition-colors cursor-pointer"
+                title="Quick Capture (Alt + C)"
+                aria-label="Quick Capture"
               >
-                <Plus className="h-3.5 w-3.5" />
-                <span className="hidden sm:inline">{isCategoryRoot ? "New Page" : "Add Subpage"}</span>
+                <Plus className="h-4 w-4" />
               </Button>
 
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                onClick={() => setShowSettings(true)}
-                className="h-8 text-xs gap-1.5 text-fd-muted-foreground hover:text-fd-foreground"
-                title="Page Settings & Export"
-              >
-                <Settings className="h-3.5 w-3.5" />
-                <span className="hidden sm:inline">Settings</span>
-              </Button>
+              {/* Page Options Dropdown */}
+              <DropdownMenu>
+                <DropdownMenuTrigger
+                  aria-label="Page Options"
+                  className="inline-flex items-center h-8 px-2.5 text-xs gap-1.5 rounded-lg border border-fd-border bg-fd-secondary/30 hover:bg-fd-accent/60 text-fd-foreground font-medium transition-colors cursor-pointer select-none focus:outline-none"
+                >
+                  <Edit3 className="h-3.5 w-3.5 text-amber-400" />
+                  <span>Edit</span>
+                  <ChevronDown className="h-3 w-3 text-fd-muted-foreground ml-0.5" />
+                </DropdownMenuTrigger>
+                <DropdownMenuContent
+                  align="end"
+                  sideOffset={6}
+                  className="w-48 p-1.5 bg-[#121214] border-fd-border text-fd-foreground shadow-xl rounded-xl"
+                >
+                  <DropdownMenuItem
+                    onClick={() => setIsEditing(true)}
+                    className="cursor-pointer gap-2.5 px-2.5 py-2 text-xs rounded-lg text-fd-foreground hover:bg-fd-accent/70 focus:bg-fd-accent/70 justify-between"
+                  >
+                    <div className="flex items-center gap-2">
+                      <Edit3 className="size-3.5 text-amber-400" />
+                      <span>Edit Mode</span>
+                    </div>
+                    <kbd className="font-mono text-[10px] text-fd-muted-foreground border border-fd-border/70 bg-fd-secondary px-1 py-0.5 rounded">E</kbd>
+                  </DropdownMenuItem>
 
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={() => setIsEditing(true)}
-                className="h-8 text-xs gap-1.5 hover:border-amber-400/40 hover:text-amber-400 transition-colors"
-              >
-                <Edit3 className="h-3.5 w-3.5 text-amber-400" />
-                Edit Page (E)
-              </Button>
+                  <DropdownMenuItem
+                    onClick={() => setShowCreateSubpage(true)}
+                    className="cursor-pointer gap-2.5 px-2.5 py-2 text-xs rounded-lg text-fd-foreground hover:bg-fd-accent/70 focus:bg-fd-accent/70"
+                  >
+                    <FilePlus className="size-3.5 text-amber-400" />
+                    <span>{isCategoryRoot ? "New Page..." : "Add Subpage..."}</span>
+                  </DropdownMenuItem>
+
+                  <DropdownMenuItem
+                    onClick={() => setShowSettings(true)}
+                    className="cursor-pointer gap-2.5 px-2.5 py-2 text-xs rounded-lg text-fd-foreground hover:bg-fd-accent/70 focus:bg-fd-accent/70"
+                  >
+                    <Settings className="size-3.5 text-amber-400" />
+                    <span>Page Settings...</span>
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
             </div>
           )}
         </div>
@@ -480,6 +525,13 @@ export function PageEditorView({
         defaultCategory={isCategoryRoot ? page.path : page.path.split("/")[0] || ""}
         open={showCreateSubpage}
         onOpenChange={setShowCreateSubpage}
+      />
+
+      {/* Quick Capture Dialog */}
+      <QuickCaptureDialog
+        open={showQuickCapture}
+        onOpenChange={setShowQuickCapture}
+        defaultPageId={page.id}
       />
     </div>
   );
