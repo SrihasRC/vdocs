@@ -463,6 +463,7 @@ export async function getAvailableMoveDestinations(currentPageId: string) {
 
     const parentPages = validPages.map((p) => ({
       id: p.id,
+      title: p.title,
       path: p.path,
       label: `${p.title} (/docs/${p.path})`,
     }));

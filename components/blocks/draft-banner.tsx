@@ -46,8 +46,8 @@ export function DraftBanner({
         <div className="flex items-center gap-2 min-w-0">
           <AlertCircle className="size-4 shrink-0 text-amber-400" />
           <span className="truncate">
-            <strong className="font-semibold text-amber-400">Draft Document</strong>
-            <span className="opacity-90"> — This page is unpublished and only visible to you.</span>
+            <strong className="font-semibold text-amber-400">Work in Progress (WIP)</strong>
+            <span className="opacity-90"> — This document is currently in progress.</span>
           </span>
         </div>
 
@@ -63,7 +63,7 @@ export function DraftBanner({
           ) : (
             <CheckCircle className="size-3" />
           )}
-          Publish Now
+          Mark as Ready
         </Button>
       </Banner>
     </div>

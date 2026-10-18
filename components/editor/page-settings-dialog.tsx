@@ -34,17 +34,6 @@ interface PageSettingsDialogProps {
   onSaved?: (updatedTitle: string, updatedTags: string[], updatedStatus: "published" | "draft") => void;
 }
 
-function computeInitialDestination(page: { path: string; parentId?: string | null }) {
-  if (page.parentId) {
-    return `parent:${page.parentId}`;
-  }
-  const parts = page.path.split("/");
-  if (parts.length > 1) {
-    return `category:${parts[0]}`;
-  }
-  return `category:`;
-}
-
 export function PageSettingsDialog({
   page,
   open,
@@ -64,23 +53,27 @@ export function PageSettingsDialog({
   const [showVaultBackup, setShowVaultBackup] = useState(false);
 
   // Move / Hierarchy State
-  const [selectedDestination, setSelectedDestination] = useState<string>(() =>
-    computeInitialDestination(page)
-  );
-  const [initialDestination, setInitialDestination] = useState<string>(() =>
-    computeInitialDestination(page)
+  const [isMoveOpen, setIsMoveOpen] = useState(false);
+  const [selectedCategory, setSelectedCategory] = useState<string>(() => {
+    const parts = page.path.split("/");
+    return parts.length > 1 ? parts[0] : "";
+  });
+  const [selectedParentId, setSelectedParentId] = useState<string>(
+    () => page.parentId || ""
   );
   const [destinations, setDestinations] = useState<{
     categories: { slug: string; label: string }[];
-    parentPages: { id: string; path: string; label: string }[];
+    parentPages: { id: string; title: string; path: string; label: string }[];
   } | null>(null);
   const [isLoadingDestinations, setIsLoadingDestinations] = useState(false);
 
   useEffect(() => {
     if (open) {
-      const initial = computeInitialDestination(page);
-      setSelectedDestination(initial);
-      setInitialDestination(initial);
+      const parts = page.path.split("/");
+      const currentCat = parts.length > 1 ? parts[0] : "";
+      setSelectedCategory(currentCat);
+      setSelectedParentId(page.parentId || "");
+      setIsMoveOpen(false);
       setTitle(page.title);
       setTemplate(page.template);
       setTagsStr((page.tags || []).join(", "));
@@ -102,20 +95,28 @@ export function PageSettingsDialog({
     }
   }, [open, page.id, page.path, page.parentId]);
 
+  // Compute pages that belong to the currently selected category
+  const categoryParentPages = (destinations?.parentPages || []).filter((p) => {
+    if (!selectedCategory) {
+      return !p.path.includes("/");
+    }
+    return p.path === selectedCategory || p.path.startsWith(`${selectedCategory}/`);
+  });
+
   // Compute preview path if moved
   const pageSlug = page.path.split("/").pop() || "";
   let previewPath = page.path;
-  if (selectedDestination.startsWith("category:")) {
-    const cat = selectedDestination.slice("category:".length);
-    previewPath = cat ? `${cat}/${pageSlug}` : pageSlug;
-  } else if (selectedDestination.startsWith("parent:")) {
-    const pId = selectedDestination.slice("parent:".length);
-    const targetParent = destinations?.parentPages.find((p) => p.id === pId);
-    if (targetParent) {
-      previewPath = `${targetParent.path}/${pageSlug}`.replace(/\/+/g, "/");
+  if (isMoveOpen) {
+    if (selectedParentId) {
+      const targetParent = destinations?.parentPages.find((p) => p.id === selectedParentId);
+      if (targetParent) {
+        previewPath = `${targetParent.path}/${pageSlug}`.replace(/\/+/g, "/");
+      }
+    } else {
+      previewPath = selectedCategory ? `${selectedCategory}/${pageSlug}` : pageSlug;
     }
   }
-  const isMoving = selectedDestination !== initialDestination;
+  const isMoving = isMoveOpen && previewPath !== page.path;
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -143,19 +144,17 @@ export function PageSettingsDialog({
     let finalPath = page.path;
     if (isMoving) {
       let moveRes;
-      if (selectedDestination.startsWith("parent:")) {
-        const targetParentId = selectedDestination.slice("parent:".length);
+      if (selectedParentId) {
         moveRes = await movePage({
           pageId: page.id,
           destinationType: "parent",
-          targetParentId,
+          targetParentId: selectedParentId,
         });
       } else {
-        const targetCategory = selectedDestination.slice("category:".length);
         moveRes = await movePage({
           pageId: page.id,
           destinationType: "category",
-          targetCategory,
+          targetCategory: selectedCategory,
         });
       }
 
@@ -225,67 +224,93 @@ export function PageSettingsDialog({
               />
             </div>
 
-            {/* Location / Parent Section */}
-            <div className="space-y-1.5">
-              <label className="text-xs font-medium text-fd-muted-foreground flex items-center justify-between">
-                <span className="flex items-center gap-1.5">
-                  <FolderInput className="h-3.5 w-3.5 text-amber-400" />
-                  Location / Hierarchy
-                </span>
-                {isMoving && (
-                  <span className="text-[10px] text-amber-400 font-medium">
-                    Move Pending
+            {/* Location & Move Section */}
+            <div className="rounded-lg border border-fd-border/70 bg-fd-secondary/20 p-2.5 space-y-2">
+              <div className="flex items-center justify-between gap-2">
+                <div className="flex items-center gap-2 min-w-0">
+                  <FolderInput className="h-3.5 w-3.5 text-amber-400 shrink-0" />
+                  <span className="text-xs font-medium text-fd-foreground">Location:</span>
+                  <span className="text-xs font-mono text-fd-muted-foreground truncate">
+                    {`/docs/${page.path}`.replace(/\/+/g, "/")}
                   </span>
-                )}
-              </label>
-              <select
-                value={selectedDestination}
-                onChange={(e) => setSelectedDestination(e.target.value)}
-                disabled={isLoadingDestinations || isSaving}
-                className="w-full h-8 rounded-lg border border-fd-border bg-fd-background px-2.5 text-xs text-fd-foreground focus:outline-none focus:ring-1 focus:ring-amber-400"
-              >
-                {isLoadingDestinations ? (
-                  <option value="">Loading locations...</option>
-                ) : (
-                  <>
-                    <optgroup label="Categories / Roots">
-                      {destinations?.categories.map((c) => (
-                        <option key={`cat-${c.slug}`} value={`category:${c.slug}`}>
-                          📁 {c.label} {c.slug ? `(/docs/${c.slug})` : "(/docs)"}
-                        </option>
-                      ))}
-                    </optgroup>
-                    {destinations?.parentPages && destinations.parentPages.length > 0 && (
-                      <optgroup label="Nest under Document (Sub-page)">
-                        {destinations.parentPages.map((p) => (
-                          <option key={`parent-${p.id}`} value={`parent:${p.id}`}>
-                            📄 {p.label}
+                </div>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setIsMoveOpen(!isMoveOpen)}
+                  className="h-6 px-2 text-xs text-amber-400 hover:text-amber-300 hover:bg-amber-400/10 cursor-pointer shrink-0 font-medium"
+                >
+                  {isMoveOpen ? "Cancel Move" : "Move..."}
+                </Button>
+              </div>
+
+              {isMoveOpen && (
+                <div className="pt-2 border-t border-fd-border/50 space-y-2.5">
+                  <div className="grid grid-cols-2 gap-2">
+                    <div className="space-y-1">
+                      <label className="text-[11px] font-medium text-fd-muted-foreground">
+                        Category
+                      </label>
+                      <select
+                        value={selectedCategory}
+                        onChange={(e) => {
+                          setSelectedCategory(e.target.value);
+                          setSelectedParentId("");
+                        }}
+                        disabled={isLoadingDestinations || isSaving}
+                        className="w-full h-8 rounded-md border border-fd-border bg-fd-background px-2 text-xs text-fd-foreground focus:outline-none focus:ring-1 focus:ring-amber-400"
+                      >
+                        {destinations?.categories.map((c) => (
+                          <option key={c.slug} value={c.slug}>
+                            {c.label || "Vault Root"}
                           </option>
                         ))}
-                      </optgroup>
-                    )}
-                  </>
-                )}
-              </select>
-            </div>
+                      </select>
+                    </div>
 
-            <div className="space-y-1.5">
-              <label className="text-xs font-medium text-fd-muted-foreground flex items-center justify-between">
-                <span>Path URL</span>
-                {isMoving && (
-                  <span className="text-[10px] text-amber-400 font-mono">
-                    Redirects will be created
-                  </span>
-                )}
-              </label>
-              <Input
-                value={`/docs/${previewPath}`.replace(/\/+/g, "/")}
-                disabled
-                className={cn(
-                  "h-8 text-xs font-mono bg-fd-secondary/30 text-fd-muted-foreground transition-colors",
-                  isMoving && "text-amber-400 border-amber-400/40 bg-amber-400/5 font-semibold"
-                )}
-              />
+                    <div className="space-y-1">
+                      <label className="text-[11px] font-medium text-fd-muted-foreground">
+                        Nest Under Document
+                      </label>
+                      <select
+                        value={selectedParentId}
+                        onChange={(e) => setSelectedParentId(e.target.value)}
+                        disabled={isLoadingDestinations || isSaving}
+                        className="w-full h-8 rounded-md border border-fd-border bg-fd-background px-2 text-xs text-fd-foreground focus:outline-none focus:ring-1 focus:ring-amber-400"
+                      >
+                        <option value="">(None - Top Level)</option>
+                        {categoryParentPages.map((p) => (
+                          <option key={p.id} value={p.id}>
+                            {p.title || p.path}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+
+                  <div className="space-y-1">
+                    <div className="flex items-center justify-between">
+                      <span className="text-[11px] font-medium text-fd-muted-foreground">
+                        New Path Preview
+                      </span>
+                      {isMoving && (
+                        <span className="text-[10px] text-amber-400 font-mono font-medium">
+                          Redirect will be created
+                        </span>
+                      )}
+                    </div>
+                    <Input
+                      value={`/docs/${previewPath}`.replace(/\/+/g, "/")}
+                      disabled
+                      className={cn(
+                        "h-7 text-xs font-mono bg-fd-secondary/40 text-fd-muted-foreground",
+                        isMoving && "text-amber-400 border-amber-400/40 bg-amber-400/5 font-semibold"
+                      )}
+                    />
+                  </div>
+                </div>
+              )}
             </div>
 
             <div className="grid grid-cols-2 gap-3">
@@ -315,8 +340,8 @@ export function PageSettingsDialog({
                   onChange={(e) => setStatus(e.target.value as any)}
                   className="w-full h-8 rounded-lg border border-fd-border bg-fd-background px-2.5 text-xs text-fd-foreground"
                 >
-                  <option value="published">Published</option>
-                  <option value="draft">Draft</option>
+                  <option value="published">Ready</option>
+                  <option value="draft">In Progress (WIP)</option>
                 </select>
               </div>
             </div>

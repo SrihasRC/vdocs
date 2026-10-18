@@ -137,7 +137,7 @@ export function buildPageTreeFromPages(
       return sorted.map((p): PageTree.Node => {
         const url = `${baseUrl}/${p.path}`.replace(/\/+/g, "/").replace(/\/$/, "");
         const subChildren = buildSubTree(p.id);
-        const displayName = p.status === "draft" ? `${p.title} (Draft)` : p.title;
+        const displayName = p.status === "draft" ? `${p.title} (WIP)` : p.title;
 
         if (subChildren.length > 0) {
           const folderNode: PageTree.Folder = {
@@ -174,7 +174,7 @@ export function buildPageTreeFromPages(
       ? [
           {
             type: "page",
-            name: indexPage.status === "draft" ? `${indexPage.title} (Draft)` : indexPage.title,
+            name: indexPage.status === "draft" ? `${indexPage.title} (WIP)` : indexPage.title,
             url: sectionUrl,
           },
         ]
