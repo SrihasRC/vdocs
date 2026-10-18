@@ -27,7 +27,7 @@ export function CreateCategoryDialog({
   const [title, setTitle] = useState("");
   const [slug, setSlug] = useState("");
   const [description, setDescription] = useState("");
-  const [template, setTemplate] = useState("index");
+  const [template, setTemplate] = useState("note");
   const [isCreating, setIsCreating] = useState(false);
 
   const handleTitleChange = (val: string) => {

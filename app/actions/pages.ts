@@ -1,7 +1,7 @@
 "use server";
 
 import { db, pages, pathRedirects, type Block, blockSchema } from "@/lib/db";
-import { eq, asc, sql } from "drizzle-orm";
+import { eq, asc, sql, isNull } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { flattenBlocksToSearchText } from "@/lib/search-text";
 
@@ -112,16 +112,18 @@ export async function updatePageMetadata(
 }
 
 /**
- * Creates a new subpage under a parent page (or root).
+ * Creates a new document under a category (as a top-level page) or under a parent page (as a sub-page).
  */
 export async function createPage({
   parentId = null,
+  category = "",
   title,
   slug,
   template = "note",
   tags = [],
 }: {
   parentId?: string | null;
+  category?: string;
   title: string;
   slug: string;
   template?: string;
@@ -137,6 +139,8 @@ export async function createPage({
       if (parent) {
         parentPath = parent.path;
       }
+    } else if (category) {
+      parentPath = category.trim().replace(/^\/+|\/+$/g, "");
     }
 
     // Clean slug
@@ -367,3 +371,49 @@ export async function deletePage(pageId: string) {
     return { success: false, error: error?.message || "Failed to delete page" };
   }
 }
+
+/**
+ * Fetches all top-level categories available in the vault.
+ */
+export async function getVaultCategories() {
+  try {
+    const rootRows = await db
+      .select({
+        id: pages.id,
+        title: pages.title,
+        path: pages.path,
+        slug: pages.slug,
+      })
+      .from(pages)
+      .where(isNull(pages.parentId));
+
+    const categoriesMap = new Map<string, { label: string; slug: string }>();
+    categoriesMap.set("", { label: "Vault (Root)", slug: "" });
+    categoriesMap.set("commands", { label: "Commands", slug: "commands" });
+    categoriesMap.set("applications", { label: "Applications", slug: "applications" });
+
+    for (const row of rootRows) {
+      if (!row.path) continue;
+      const firstSegment = row.path.split("/")[0];
+      if (firstSegment && !categoriesMap.has(firstSegment)) {
+        categoriesMap.set(firstSegment, {
+          label: row.title || (firstSegment.charAt(0).toUpperCase() + firstSegment.slice(1)),
+          slug: firstSegment,
+        });
+      }
+    }
+
+    return { success: true, categories: Array.from(categoriesMap.values()) };
+  } catch (error: any) {
+    console.error("Failed to fetch vault categories:", error);
+    return {
+      success: true,
+      categories: [
+        { label: "Vault (Root)", slug: "" },
+        { label: "Commands", slug: "commands" },
+        { label: "Applications", slug: "applications" },
+      ],
+    };
+  }
+}
+

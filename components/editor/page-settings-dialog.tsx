@@ -16,6 +16,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { updatePageMetadata, deletePage } from "@/app/actions/pages";
 import { Trash2, Settings, Loader2, Download, HardDrive } from "lucide-react";
 import { VaultBackupDialog } from "@/components/export/vault-backup-dialog";
+import { ConfirmDeleteDialog } from "@/components/ui/confirm-delete-dialog";
 
 interface PageSettingsDialogProps {
   page: {
@@ -28,7 +29,7 @@ interface PageSettingsDialogProps {
   };
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onSaved?: (updatedTitle: string, updatedTags: string[]) => void;
+  onSaved?: (updatedTitle: string, updatedTags: string[], updatedStatus: "published" | "draft") => void;
 }
 
 export function PageSettingsDialog({
@@ -46,6 +47,7 @@ export function PageSettingsDialog({
   );
   const [isSaving, setIsSaving] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [showVaultBackup, setShowVaultBackup] = useState(false);
 
   const handleSave = async (e: React.FormEvent) => {
@@ -65,7 +67,7 @@ export function PageSettingsDialog({
 
     setIsSaving(false);
     if (res.success) {
-      onSaved?.(title, tags);
+      onSaved?.(title, tags, status);
       onOpenChange(false);
       router.refresh();
     } else {
@@ -73,20 +75,13 @@ export function PageSettingsDialog({
     }
   };
 
-  const handleDelete = async () => {
-    if (
-      !confirm(
-        `Are you sure you want to delete "${page.title}"? Any child pages under this page will also be removed.`
-      )
-    ) {
-      return;
-    }
-
+  const handleConfirmDelete = async () => {
     setIsDeleting(true);
     const res = await deletePage(page.id);
     setIsDeleting(false);
 
     if (res.success) {
+      setShowDeleteConfirm(false);
       onOpenChange(false);
       const target = res.parentPath ? `/docs/${res.parentPath}` : "/docs";
       router.push(target);
@@ -219,7 +214,7 @@ export function PageSettingsDialog({
               type="button"
               variant="ghost"
               size="sm"
-              onClick={handleDelete}
+              onClick={() => setShowDeleteConfirm(true)}
               disabled={isDeleting || isSaving}
               className="text-destructive hover:bg-destructive/10 text-xs gap-1.5 cursor-pointer"
             >
@@ -251,6 +246,14 @@ export function PageSettingsDialog({
         </form>
       </DialogContent>
     </Dialog>
+
+    <ConfirmDeleteDialog
+      open={showDeleteConfirm}
+      onOpenChange={setShowDeleteConfirm}
+      title={page.title}
+      isDeleting={isDeleting}
+      onConfirm={handleConfirmDelete}
+    />
 
     <VaultBackupDialog
       open={showVaultBackup}

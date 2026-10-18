@@ -2,18 +2,23 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { Banner } from "fumadocs-ui/components/banner";
 import { togglePageStatus } from "@/app/actions/pages";
 import { Button } from "@/components/ui/button";
 import { AlertCircle, CheckCircle, Loader2 } from "lucide-react";
 
 interface DraftBannerProps {
   pageId: string;
-  initialStatus: string;
+  status: string;
+  onStatusChange?: (newStatus: "published" | "draft") => void;
 }
 
-export function DraftBanner({ pageId, initialStatus }: DraftBannerProps) {
+export function DraftBanner({
+  pageId,
+  status,
+  onStatusChange,
+}: DraftBannerProps) {
   const router = useRouter();
-  const [status, setStatus] = useState(initialStatus);
   const [isToggling, setIsToggling] = useState(false);
 
   if (status === "published") {
@@ -26,34 +31,41 @@ export function DraftBanner({ pageId, initialStatus }: DraftBannerProps) {
     setIsToggling(false);
 
     if (res.success && res.status) {
-      setStatus(res.status);
+      onStatusChange?.(res.status as "published" | "draft");
       router.refresh();
     }
   };
 
   return (
-    <div className="not-prose mb-6 flex items-center justify-between gap-3 rounded-lg border border-amber-500/30 bg-amber-500/10 p-3 text-xs text-amber-300">
-      <div className="flex items-center gap-2 min-w-0">
-        <AlertCircle className="size-4 shrink-0 text-amber-400" />
-        <span className="truncate">
-          <strong>Draft Document</strong> — This page is unpublished and only visible to you.
-        </span>
-      </div>
-
-      <Button
-        type="button"
-        size="sm"
-        disabled={isToggling}
-        onClick={handlePublish}
-        className="shrink-0 h-7 px-3 text-xs cursor-pointer bg-amber-400 text-black hover:bg-amber-300 font-semibold gap-1.5 shadow-xs"
+    <div className="not-prose mb-6">
+      <Banner
+        changeLayout={false}
+        variant="normal"
+        className="rounded-lg border border-amber-500/30 bg-amber-500/10 px-3.5 py-2 text-xs text-amber-300 flex items-center justify-between gap-3 font-normal"
       >
-        {isToggling ? (
-          <Loader2 className="size-3 animate-spin" />
-        ) : (
-          <CheckCircle className="size-3" />
-        )}
-        Publish Now
-      </Button>
+        <div className="flex items-center gap-2 min-w-0">
+          <AlertCircle className="size-4 shrink-0 text-amber-400" />
+          <span className="truncate">
+            <strong className="font-semibold text-amber-400">Draft Document</strong>
+            <span className="opacity-90"> — This page is unpublished and only visible to you.</span>
+          </span>
+        </div>
+
+        <Button
+          type="button"
+          size="sm"
+          disabled={isToggling}
+          onClick={handlePublish}
+          className="shrink-0 h-6 px-2.5 text-xs cursor-pointer bg-amber-400 text-black hover:bg-amber-300 font-semibold gap-1.5 shadow-xs"
+        >
+          {isToggling ? (
+            <Loader2 className="size-3 animate-spin" />
+          ) : (
+            <CheckCircle className="size-3" />
+          )}
+          Publish Now
+        </Button>
+      </Banner>
     </div>
   );
 }

@@ -11,14 +11,16 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { CreateCategoryDialog } from "@/components/editor/create-category-dialog";
+import { CreatePageDialog } from "@/components/editor/create-page-dialog";
 import { VaultBackupDialog } from "@/components/export/vault-backup-dialog";
-import { Ellipsis, HardDrive, Monitor, Moon, Sun, FolderPlus } from "lucide-react";
+import { Ellipsis, HardDrive, Monitor, Moon, Sun, FolderPlus, FilePlus } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 export function CustomHeaderActions({ className, ...props }: React.ComponentProps<"div">) {
   const { menuItems } = useSpaciousLayout();
   const [backupOpen, setBackupOpen] = useState(false);
   const [createCategoryOpen, setCreateCategoryOpen] = useState(false);
+  const [createPageOpen, setCreatePageOpen] = useState(false);
   const { theme, setTheme } = useTheme();
 
   const iconLinks = menuItems.filter((item) => item.type === "icon");
@@ -57,6 +59,15 @@ export function CustomHeaderActions({ className, ...props }: React.ComponentProp
             sideOffset={8}
             className="w-56 p-1.5 bg-[#121214] border-fd-border text-fd-foreground shadow-xl rounded-xl"
           >
+            {/* New Document */}
+            <DropdownMenuItem
+              onClick={() => setCreatePageOpen(true)}
+              className="cursor-pointer gap-2.5 px-2.5 py-2 text-xs rounded-lg text-fd-foreground hover:bg-fd-accent/70 focus:bg-fd-accent/70"
+            >
+              <FilePlus className="size-3.5 text-amber-400" />
+              <span>New Document...</span>
+            </DropdownMenuItem>
+
             {/* New Category */}
             <DropdownMenuItem
               onClick={() => setCreateCategoryOpen(true)}
@@ -131,6 +142,7 @@ export function CustomHeaderActions({ className, ...props }: React.ComponentProp
 
       <VaultBackupDialog open={backupOpen} onOpenChange={setBackupOpen} />
       <CreateCategoryDialog open={createCategoryOpen} onOpenChange={setCreateCategoryOpen} />
+      <CreatePageDialog open={createPageOpen} onOpenChange={setCreatePageOpen} />
     </>
   );
 }
