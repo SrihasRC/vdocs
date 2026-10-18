@@ -44,6 +44,11 @@ export function flattenBlocksToSearchText(
       case "file":
         if (block.data.caption) parts.push(block.data.caption);
         break;
+
+      case "callout":
+        if (block.data.title) parts.push(block.data.title);
+        if (block.data.content) parts.push(block.data.content);
+        break;
     }
   }
 

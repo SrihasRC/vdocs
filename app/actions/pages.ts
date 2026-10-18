@@ -608,4 +608,67 @@ export async function movePage({
   }
 }
 
+/**
+ * Duplicates an existing document along with all its blocks and metadata.
+ */
+export async function duplicatePage(pageId: string) {
+  try {
+    const [page] = await db.select().from(pages).where(eq(pages.id, pageId));
+    if (!page) {
+      return { success: false, error: "Document not found" };
+    }
+
+    const baseSlug = page.slug;
+    let newSlug = `${baseSlug}-copy`;
+    let counter = 1;
+
+    const pathParts = page.path.split("/");
+    pathParts.pop();
+    const parentPathPrefix = pathParts.length > 0 ? `${pathParts.join("/")}/` : "";
+
+    let newPath = `${parentPathPrefix}${newSlug}`;
+
+    // Loop until we find an unused slug/path
+    while (true) {
+      const [existing] = await db
+        .select({ id: pages.id })
+        .from(pages)
+        .where(eq(pages.path, newPath));
+      if (!existing) break;
+      counter++;
+      newSlug = `${baseSlug}-copy-${counter}`;
+      newPath = `${parentPathPrefix}${newSlug}`;
+    }
+
+    const clonedBlocks = ((page.blocks as Block[]) || []).map((b) => ({
+      ...b,
+      id: `${b.type}-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+    }));
+
+    const title = `${page.title} (Copy)`;
+    const searchText = flattenBlocksToSearchText(title, clonedBlocks, page.tags || []);
+
+    const [newPage] = await db
+      .insert(pages)
+      .values({
+        parentId: page.parentId,
+        slug: newSlug,
+        path: newPath,
+        title,
+        template: page.template,
+        blocks: clonedBlocks,
+        tags: [...(page.tags || [])],
+        status: page.status,
+        searchText,
+      })
+      .returning();
+
+    revalidatePath("/docs", "layout");
+    return { success: true, newPath, page: newPage };
+  } catch (error: any) {
+    console.error("Failed to duplicate page:", error);
+    return { success: false, error: error?.message || "Failed to duplicate page" };
+  }
+}
+
 

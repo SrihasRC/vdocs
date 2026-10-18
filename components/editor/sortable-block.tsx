@@ -9,6 +9,7 @@ import { StepsEditor } from "./steps-editor";
 import { QAEditor } from "./qa-editor";
 import { NoteEditor } from "./note-editor";
 import { FileEditor } from "./file-editor";
+import { CalloutEditor } from "./callout-editor";
 import {
   GripVertical,
   ChevronDown,
@@ -20,6 +21,7 @@ import {
   FileText,
   ListOrdered,
   Paperclip,
+  AlertCircle,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -88,6 +90,14 @@ export function SortableBlock({
           icon: <Paperclip className="h-3.5 w-3.5 text-amber-400" />,
           label: "File",
           preview: block.data.caption || block.data.fileId || "Attached file",
+        };
+      case "callout":
+        return {
+          icon: <AlertCircle className="h-3.5 w-3.5 text-amber-400" />,
+          label: `Callout (${block.data.type || "info"})`,
+          preview:
+            block.data.title ||
+            (block.data.content.slice(0, 40) || "Callout alert"),
         };
     }
   };
@@ -185,6 +195,9 @@ export function SortableBlock({
           )}
           {block.type === "file" && (
             <FileEditor block={block} onChange={onChange} />
+          )}
+          {block.type === "callout" && (
+            <CalloutEditor block={block} onChange={onChange} />
           )}
         </div>
       )}

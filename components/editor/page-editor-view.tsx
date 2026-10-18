@@ -25,7 +25,7 @@ import { AddBlockBar } from "./add-block-bar";
 import { PageSettingsDialog } from "./page-settings-dialog";
 import { CreatePageDialog } from "./create-page-dialog";
 import { QuickCaptureDialog } from "@/components/quick-capture/quick-capture-dialog";
-import { savePageBlocks } from "@/app/actions/pages";
+import { savePageBlocks, duplicatePage } from "@/app/actions/pages";
 import { DraftBanner } from "@/components/blocks/draft-banner";
 import { Button } from "@/components/ui/button";
 import {
@@ -44,6 +44,7 @@ import {
   Plus,
   ChevronDown,
   FilePlus,
+  Copy,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -69,6 +70,19 @@ export function PageEditorView({
   const [showSettings, setShowSettings] = useState(false);
   const [showCreateSubpage, setShowCreateSubpage] = useState(false);
   const [showQuickCapture, setShowQuickCapture] = useState(false);
+  const [isDuplicating, setIsDuplicating] = useState(false);
+
+  const handleDuplicate = async () => {
+    setIsDuplicating(true);
+    const res = await duplicatePage(page.id);
+    setIsDuplicating(false);
+    if (res.success && res.newPath) {
+      router.push(`/docs/${res.newPath}`);
+      router.refresh();
+    } else {
+      alert(res.error || "Failed to duplicate page");
+    }
+  };
 
   // Global shortcut Alt + C for Quick Capture
   useEffect(() => {
@@ -268,6 +282,17 @@ export function PageEditorView({
           },
         };
         break;
+      case "callout":
+        newBlock = {
+          id,
+          type: "callout",
+          data: {
+            type: "info",
+            title: "Important Note",
+            content: "Write important context, warning, or tip here...",
+          },
+        };
+        break;
       case "file":
         newBlock = {
           id,
@@ -432,6 +457,19 @@ export function PageEditorView({
                   >
                     <FilePlus className="size-3.5 text-amber-400" />
                     <span>{isCategoryRoot ? "New Page..." : "Add Subpage..."}</span>
+                  </DropdownMenuItem>
+
+                  <DropdownMenuItem
+                    onClick={handleDuplicate}
+                    disabled={isDuplicating}
+                    className="cursor-pointer gap-2.5 px-2.5 py-2 text-xs rounded-lg text-fd-foreground hover:bg-fd-accent/70 focus:bg-fd-accent/70"
+                  >
+                    {isDuplicating ? (
+                      <Loader2 className="size-3.5 text-amber-400 animate-spin" />
+                    ) : (
+                      <Copy className="size-3.5 text-amber-400" />
+                    )}
+                    <span>Duplicate Page</span>
                   </DropdownMenuItem>
 
                   <DropdownMenuItem

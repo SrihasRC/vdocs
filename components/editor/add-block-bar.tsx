@@ -10,6 +10,7 @@ import {
   Paperclip,
   Plus,
   FolderPlus,
+  AlertCircle,
 } from "lucide-react";
 
 interface AddBlockBarProps {
@@ -78,8 +79,19 @@ export function AddBlockBar({
             type="button"
             variant="outline"
             size="sm"
+            onClick={() => onAddBlock("callout")}
+            className="h-7 text-xs gap-1.5 bg-fd-background hover:border-amber-400/40 hover:text-amber-400 cursor-pointer"
+          >
+            <AlertCircle className="h-3 w-3 text-amber-400" />
+            Callout
+          </Button>
+
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
             onClick={() => onAddBlock("file")}
-            className="h-7 text-xs gap-1.5 bg-fd-background hover:border-amber-400/40 hover:text-amber-400"
+            className="h-7 text-xs gap-1.5 bg-fd-background hover:border-amber-400/40 hover:text-amber-400 cursor-pointer"
           >
             <Paperclip className="h-3 w-3 text-amber-400" />
             File

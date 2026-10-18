@@ -52,6 +52,12 @@ export const fileBlockDataSchema = z.object({
   caption: z.string().optional(),
 });
 
+export const calloutBlockDataSchema = z.object({
+  type: z.enum(["info", "warning", "error", "idea", "success"]).default("info"),
+  title: z.string().optional(),
+  content: z.string().default(""),
+});
+
 export const blockSchema = z.discriminatedUnion("type", [
   z.object({
     id: z.string(),
@@ -78,6 +84,11 @@ export const blockSchema = z.discriminatedUnion("type", [
     type: z.literal("file"),
     data: fileBlockDataSchema,
   }),
+  z.object({
+    id: z.string(),
+    type: z.literal("callout"),
+    data: calloutBlockDataSchema,
+  }),
 ]);
 
 export type Block = z.infer<typeof blockSchema>;
@@ -86,6 +97,7 @@ export type StepsBlock = Extract<Block, { type: "steps" }>;
 export type QABlock = Extract<Block, { type: "qa" }>;
 export type NoteBlock = Extract<Block, { type: "note" }>;
 export type FileBlock = Extract<Block, { type: "file" }>;
+export type CalloutBlock = Extract<Block, { type: "callout" }>;
 
 /* =========================================================================
    Application Tables (Pages, Files, Redirects)

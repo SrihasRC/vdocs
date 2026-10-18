@@ -6,6 +6,7 @@ import { StepsBlockRenderer } from "./steps-block";
 import { QABlockRenderer } from "./qa-block";
 import { NoteBlockRenderer } from "./note-block";
 import { FileBlockRenderer } from "./file-block";
+import { CalloutBlockRenderer } from "./callout-block";
 
 interface BlockListRendererProps {
   blocks: Block[];
@@ -33,6 +34,8 @@ export function BlockListRenderer({ blocks, files = {} }: BlockListRendererProps
             return <QABlockRenderer key={block.id} block={block} />;
           case "note":
             return <NoteBlockRenderer key={block.id} block={block} />;
+          case "callout":
+            return <CalloutBlockRenderer key={block.id} block={block} />;
           case "file":
             return (
               <FileBlockRenderer

@@ -98,6 +98,21 @@ export function pageToMarkdown(
         lines.push(`[Download File](/api/files/${fileId})\n`);
         break;
       }
+
+      case "callout": {
+        const { type, title, content } = block.data;
+        const alertType =
+          type === "warning" ? "WARNING" :
+          type === "error" ? "CAUTION" :
+          type === "idea" ? "TIP" : "NOTE";
+
+        lines.push(`> [!${alertType}]${title ? ` ${title}` : ""}`);
+        if (content) {
+          lines.push(`> ${content.replace(/\n/g, "\n> ")}`);
+        }
+        lines.push("");
+        break;
+      }
     }
   }
 
