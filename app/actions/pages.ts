@@ -1,7 +1,7 @@
 "use server";
 
 import { db, pages, pathRedirects, type Block, blockSchema } from "@/lib/db";
-import { eq, asc, sql, isNull } from "drizzle-orm";
+import { eq, asc, sql, isNull, like } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { flattenBlocksToSearchText } from "@/lib/search-text";
 
@@ -416,4 +416,195 @@ export async function getVaultCategories() {
     };
   }
 }
+
+/**
+ * Retrieves valid destinations for moving a document (excluding itself and its descendants).
+ */
+export async function getAvailableMoveDestinations(currentPageId: string) {
+  try {
+    const allPages = await db
+      .select({
+        id: pages.id,
+        title: pages.title,
+        path: pages.path,
+        parentId: pages.parentId,
+      })
+      .from(pages);
+
+    const currentPage = allPages.find((p) => p.id === currentPageId);
+    if (!currentPage) return { success: false, categories: [], parentPages: [] };
+
+    const invalidPrefix = `${currentPage.path}/`;
+
+    // Valid pages that are NOT currentPage and NOT descendants of currentPage
+    const validPages = allPages.filter(
+      (p) => p.id !== currentPageId && !p.path.startsWith(invalidPrefix)
+    );
+
+    // Root categories
+    const categoriesMap = new Map<string, string>();
+    categoriesMap.set("", "Vault (Root)");
+    categoriesMap.set("commands", "Commands (Root)");
+    categoriesMap.set("applications", "Applications (Root)");
+
+    for (const p of allPages) {
+      if (!p.parentId && p.path) {
+        const seg = p.path.split("/")[0];
+        if (seg && !categoriesMap.has(seg)) {
+          categoriesMap.set(seg, `${p.title} (Category)`);
+        }
+      }
+    }
+
+    const categories = Array.from(categoriesMap.entries()).map(([slug, label]) => ({
+      slug,
+      label,
+    }));
+
+    const parentPages = validPages.map((p) => ({
+      id: p.id,
+      path: p.path,
+      label: `${p.title} (/docs/${p.path})`,
+    }));
+
+    return {
+      success: true,
+      categories,
+      parentPages,
+    };
+  } catch (err: any) {
+    console.error("Failed to get move destinations:", err);
+    return { success: false, categories: [], parentPages: [] };
+  }
+}
+
+/**
+ * Moves a page to a new category or under a new parent document,
+ * updating its path and all descendant paths, and registering redirects.
+ */
+export async function movePage({
+  pageId,
+  destinationType,
+  targetCategory,
+  targetParentId,
+}: {
+  pageId: string;
+  destinationType: "category" | "parent";
+  targetCategory?: string;
+  targetParentId?: string;
+}) {
+  try {
+    const [page] = await db
+      .select()
+      .from(pages)
+      .where(eq(pages.id, pageId));
+
+    if (!page) {
+      return { success: false, error: "Document not found" };
+    }
+
+    const oldPath = page.path;
+    let newPath = "";
+    let newParentId: string | null = null;
+
+    if (destinationType === "parent" && targetParentId) {
+      if (targetParentId === pageId) {
+        return { success: false, error: "Cannot move a document into itself" };
+      }
+      const [parent] = await db
+        .select()
+        .from(pages)
+        .where(eq(pages.id, targetParentId));
+
+      if (!parent) {
+        return { success: false, error: "Target parent document not found" };
+      }
+
+      if (parent.path === oldPath || parent.path.startsWith(`${oldPath}/`)) {
+        return { success: false, error: "Cannot move a document into its own sub-page" };
+      }
+
+      newParentId = parent.id;
+      newPath = `${parent.path}/${page.slug}`.replace(/\/+/g, "/").replace(/^\/+/, "");
+    } else {
+      // Destination is a category root or vault root
+      const cleanCategory = (targetCategory || "").trim().replace(/^\/+|\/+$/g, "");
+      newParentId = null;
+      newPath = cleanCategory ? `${cleanCategory}/${page.slug}` : page.slug;
+    }
+
+    if (newPath === oldPath) {
+      return { success: true, newPath, noChange: true };
+    }
+
+    // Check collision
+    const [existing] = await db
+      .select({ id: pages.id })
+      .from(pages)
+      .where(eq(pages.path, newPath));
+
+    if (existing && existing.id !== pageId) {
+      return { success: false, error: `A document already exists at path '/docs/${newPath}'` };
+    }
+
+    // 1. Record redirect for oldPath -> pageId
+    await db
+      .insert(pathRedirects)
+      .values({
+        oldPath,
+        pageId,
+      })
+      .onConflictDoUpdate({
+        target: pathRedirects.oldPath,
+        set: { pageId, createdAt: new Date() },
+      });
+
+    // 2. Update page itself
+    await db
+      .update(pages)
+      .set({
+        parentId: newParentId,
+        path: newPath,
+        updatedAt: new Date(),
+      })
+      .where(eq(pages.id, pageId));
+
+    // 3. Update all descendants
+    const descendantPages = await db
+      .select({ id: pages.id, path: pages.path })
+      .from(pages)
+      .where(like(pages.path, `${oldPath}/%`));
+
+    for (const child of descendantPages) {
+      const childOldPath = child.path;
+      const childNewPath = `${newPath}${child.path.slice(oldPath.length)}`;
+
+      await db
+        .insert(pathRedirects)
+        .values({
+          oldPath: childOldPath,
+          pageId: child.id,
+        })
+        .onConflictDoUpdate({
+          target: pathRedirects.oldPath,
+          set: { pageId: child.id, createdAt: new Date() },
+        });
+
+      await db
+        .update(pages)
+        .set({
+          path: childNewPath,
+          updatedAt: new Date(),
+        })
+        .where(eq(pages.id, child.id));
+    }
+
+    revalidatePath("/docs", "layout");
+    return { success: true, newPath };
+  } catch (error: any) {
+    console.error("Failed to move page:", error);
+    return { success: false, error: error?.message || "Failed to move document" };
+  }
+}
+
 

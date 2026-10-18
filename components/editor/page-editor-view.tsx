@@ -507,6 +507,7 @@ export function PageEditorView({
           template: page.template,
           tags: page.tags || [],
           status: pageStatus,
+          parentId: page.parentId,
         }}
         open={showSettings}
         onOpenChange={setShowSettings}

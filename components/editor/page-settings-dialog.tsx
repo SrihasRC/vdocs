@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import {
   Dialog,
@@ -13,10 +13,11 @@ import {
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { updatePageMetadata, deletePage } from "@/app/actions/pages";
-import { Trash2, Settings, Loader2, Download, HardDrive } from "lucide-react";
+import { updatePageMetadata, deletePage, getAvailableMoveDestinations, movePage } from "@/app/actions/pages";
+import { Trash2, Settings, Loader2, Download, HardDrive, FolderInput } from "lucide-react";
 import { VaultBackupDialog } from "@/components/export/vault-backup-dialog";
 import { ConfirmDeleteDialog } from "@/components/ui/confirm-delete-dialog";
+import { cn } from "@/lib/utils";
 
 interface PageSettingsDialogProps {
   page: {
@@ -26,10 +27,22 @@ interface PageSettingsDialogProps {
     template: string;
     tags: string[];
     status: string;
+    parentId?: string | null;
   };
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onSaved?: (updatedTitle: string, updatedTags: string[], updatedStatus: "published" | "draft") => void;
+}
+
+function computeInitialDestination(page: { path: string; parentId?: string | null }) {
+  if (page.parentId) {
+    return `parent:${page.parentId}`;
+  }
+  const parts = page.path.split("/");
+  if (parts.length > 1) {
+    return `category:${parts[0]}`;
+  }
+  return `category:`;
 }
 
 export function PageSettingsDialog({
@@ -50,6 +63,60 @@ export function PageSettingsDialog({
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [showVaultBackup, setShowVaultBackup] = useState(false);
 
+  // Move / Hierarchy State
+  const [selectedDestination, setSelectedDestination] = useState<string>(() =>
+    computeInitialDestination(page)
+  );
+  const [initialDestination, setInitialDestination] = useState<string>(() =>
+    computeInitialDestination(page)
+  );
+  const [destinations, setDestinations] = useState<{
+    categories: { slug: string; label: string }[];
+    parentPages: { id: string; path: string; label: string }[];
+  } | null>(null);
+  const [isLoadingDestinations, setIsLoadingDestinations] = useState(false);
+
+  useEffect(() => {
+    if (open) {
+      const initial = computeInitialDestination(page);
+      setSelectedDestination(initial);
+      setInitialDestination(initial);
+      setTitle(page.title);
+      setTemplate(page.template);
+      setTagsStr((page.tags || []).join(", "));
+      setStatus((page.status as any) || "published");
+
+      setIsLoadingDestinations(true);
+      getAvailableMoveDestinations(page.id)
+        .then((res) => {
+          if (res.success) {
+            setDestinations({
+              categories: res.categories,
+              parentPages: res.parentPages,
+            });
+          }
+        })
+        .finally(() => {
+          setIsLoadingDestinations(false);
+        });
+    }
+  }, [open, page.id, page.path, page.parentId]);
+
+  // Compute preview path if moved
+  const pageSlug = page.path.split("/").pop() || "";
+  let previewPath = page.path;
+  if (selectedDestination.startsWith("category:")) {
+    const cat = selectedDestination.slice("category:".length);
+    previewPath = cat ? `${cat}/${pageSlug}` : pageSlug;
+  } else if (selectedDestination.startsWith("parent:")) {
+    const pId = selectedDestination.slice("parent:".length);
+    const targetParent = destinations?.parentPages.find((p) => p.id === pId);
+    if (targetParent) {
+      previewPath = `${targetParent.path}/${pageSlug}`.replace(/\/+/g, "/");
+    }
+  }
+  const isMoving = selectedDestination !== initialDestination;
+
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSaving(true);
@@ -58,6 +125,7 @@ export function PageSettingsDialog({
       .map((t) => t.trim().toLowerCase())
       .filter(Boolean);
 
+    // 1. Update basic metadata
     const res = await updatePageMetadata(page.id, {
       title,
       template,
@@ -65,13 +133,51 @@ export function PageSettingsDialog({
       status,
     });
 
-    setIsSaving(false);
-    if (res.success) {
-      onSaved?.(title, tags, status);
-      onOpenChange(false);
-      router.refresh();
-    } else {
+    if (!res.success) {
+      setIsSaving(false);
       alert(res.error || "Failed to update page settings");
+      return;
+    }
+
+    // 2. Perform Move / Re-parent if location changed
+    let finalPath = page.path;
+    if (isMoving) {
+      let moveRes;
+      if (selectedDestination.startsWith("parent:")) {
+        const targetParentId = selectedDestination.slice("parent:".length);
+        moveRes = await movePage({
+          pageId: page.id,
+          destinationType: "parent",
+          targetParentId,
+        });
+      } else {
+        const targetCategory = selectedDestination.slice("category:".length);
+        moveRes = await movePage({
+          pageId: page.id,
+          destinationType: "category",
+          targetCategory,
+        });
+      }
+
+      if (!moveRes.success) {
+        setIsSaving(false);
+        alert(moveRes.error || "Metadata updated, but failed to move document");
+        return;
+      }
+
+      if (moveRes.newPath) {
+        finalPath = moveRes.newPath;
+      }
+    }
+
+    setIsSaving(false);
+    onSaved?.(title, tags, status);
+    onOpenChange(false);
+
+    if (isMoving && finalPath !== page.path) {
+      router.push(`/docs/${finalPath}`);
+    } else {
+      router.refresh();
     }
   };
 
@@ -119,14 +225,66 @@ export function PageSettingsDialog({
               />
             </div>
 
+            {/* Location / Parent Section */}
             <div className="space-y-1.5">
-              <label className="text-xs font-medium text-fd-muted-foreground">
-                Path URL
+              <label className="text-xs font-medium text-fd-muted-foreground flex items-center justify-between">
+                <span className="flex items-center gap-1.5">
+                  <FolderInput className="h-3.5 w-3.5 text-amber-400" />
+                  Location / Hierarchy
+                </span>
+                {isMoving && (
+                  <span className="text-[10px] text-amber-400 font-medium">
+                    Move Pending
+                  </span>
+                )}
+              </label>
+              <select
+                value={selectedDestination}
+                onChange={(e) => setSelectedDestination(e.target.value)}
+                disabled={isLoadingDestinations || isSaving}
+                className="w-full h-8 rounded-lg border border-fd-border bg-fd-background px-2.5 text-xs text-fd-foreground focus:outline-none focus:ring-1 focus:ring-amber-400"
+              >
+                {isLoadingDestinations ? (
+                  <option value="">Loading locations...</option>
+                ) : (
+                  <>
+                    <optgroup label="Categories / Roots">
+                      {destinations?.categories.map((c) => (
+                        <option key={`cat-${c.slug}`} value={`category:${c.slug}`}>
+                          📁 {c.label} {c.slug ? `(/docs/${c.slug})` : "(/docs)"}
+                        </option>
+                      ))}
+                    </optgroup>
+                    {destinations?.parentPages && destinations.parentPages.length > 0 && (
+                      <optgroup label="Nest under Document (Sub-page)">
+                        {destinations.parentPages.map((p) => (
+                          <option key={`parent-${p.id}`} value={`parent:${p.id}`}>
+                            📄 {p.label}
+                          </option>
+                        ))}
+                      </optgroup>
+                    )}
+                  </>
+                )}
+              </select>
+            </div>
+
+            <div className="space-y-1.5">
+              <label className="text-xs font-medium text-fd-muted-foreground flex items-center justify-between">
+                <span>Path URL</span>
+                {isMoving && (
+                  <span className="text-[10px] text-amber-400 font-mono">
+                    Redirects will be created
+                  </span>
+                )}
               </label>
               <Input
-                value={`/docs/${page.path}`.replace(/\/+/g, "/")}
+                value={`/docs/${previewPath}`.replace(/\/+/g, "/")}
                 disabled
-                className="h-8 text-xs font-mono bg-fd-secondary/30 text-fd-muted-foreground"
+                className={cn(
+                  "h-8 text-xs font-mono bg-fd-secondary/30 text-fd-muted-foreground transition-colors",
+                  isMoving && "text-amber-400 border-amber-400/40 bg-amber-400/5 font-semibold"
+                )}
               />
             </div>
 
