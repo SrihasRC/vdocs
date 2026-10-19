@@ -193,6 +193,8 @@ export function CreatePageDialog({
                 <option value="command">Command Runbook</option>
                 <option value="steps">Step-by-Step</option>
                 <option value="qa">Q&A / Interview</option>
+                <option value="api">API Reference</option>
+                <option value="kv">Cheatsheet / KV Table</option>
                 <option value="index">Container / Index</option>
               </select>
             </div>

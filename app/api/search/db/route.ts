@@ -20,16 +20,14 @@ export async function GET(request: NextRequest) {
         path: pages.path,
         template: pages.template,
         tags: pages.tags,
+        status: pages.status,
         searchText: pages.searchText,
       })
       .from(pages)
       .where(
-        and(
-          eq(pages.status, "published"),
-          or(
-            ilike(pages.title, `%${q}%`),
-            ilike(pages.searchText, `%${q}%`)
-          )
+        or(
+          ilike(pages.title, `%${q}%`),
+          ilike(pages.searchText, `%${q}%`)
         )
       )
       .limit(10);
@@ -52,7 +50,7 @@ export async function GET(request: NextRequest) {
 
       return {
         id: p.id,
-        title: p.title,
+        title: p.status === "draft" ? `${p.title} (WIP)` : p.title,
         path: p.path,
         template: p.template,
         tags: p.tags,

@@ -14,16 +14,16 @@ export const { GET } = createSearchAPI("simple", {
           path: pages.path,
           searchText: pages.searchText,
           template: pages.template,
+          status: pages.status,
         })
-        .from(pages)
-        .where(eq(pages.status, "published"));
+        .from(pages);
 
       return dbPages.map((p) => ({
         id: p.id,
-        title: p.title,
+        title: p.status === "draft" ? `${p.title} (WIP)` : p.title,
         url: `/docs/${p.path}`.replace(/\/+/g, "/"),
         content: p.searchText || p.title,
-        keywords: p.template,
+        keywords: `${p.template} ${p.status === "draft" ? "wip draft" : ""}`,
       }));
     } catch (error) {
       console.error("Failed to build search index:", error);

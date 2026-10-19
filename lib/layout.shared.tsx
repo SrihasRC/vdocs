@@ -6,7 +6,7 @@ export function baseOptions(): BaseLayoutProps {
     nav: {
       title: <Logo />,
     },
-    githubUrl: "https://github.com",
+    githubUrl: process.env.NEXT_PUBLIC_GITHUB_URL || undefined,
   };
 }
 

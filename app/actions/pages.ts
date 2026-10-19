@@ -196,6 +196,43 @@ export async function createPage({
           },
         },
       ];
+    } else if (template === "api") {
+      initialBlocks = [
+        {
+          id: `api-${Date.now()}`,
+          type: "api",
+          data: {
+            method: "GET",
+            endpoint: `/api/v1/${cleanSlug}`,
+            title,
+            description: "API endpoint documentation and usage guidelines.",
+            params: [
+              { key: "id", value: "string", required: true, description: "Resource identifier" },
+            ],
+            headers: [
+              { key: "Authorization", value: "Bearer <token>", required: true, description: "Bearer authentication" },
+            ],
+            requestBody: "",
+            responseStatus: 200,
+            responseBody: JSON.stringify({ status: "success", data: { id: "123", name: title } }, null, 2),
+          },
+        },
+      ];
+    } else if (template === "kv") {
+      initialBlocks = [
+        {
+          id: `kv-${Date.now()}`,
+          type: "kv",
+          data: {
+            title: `${title} Reference`,
+            description: "Common variables, shortcuts, and key-value pairs.",
+            rows: [
+              { key: "CONFIG_PATH", value: "/etc/app/config.json", description: "Default configuration path" },
+              { key: "PORT", value: "8080", description: "Server listening port" },
+            ],
+          },
+        },
+      ];
     } else {
       initialBlocks = [
         {
