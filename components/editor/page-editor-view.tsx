@@ -335,8 +335,8 @@ export function PageEditorView({
           id,
           type: "file",
           data: {
-            fileId: "file-id",
-            caption: "Download attachment",
+            fileId: "",
+            caption: "",
           },
         };
         break;

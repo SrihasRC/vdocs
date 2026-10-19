@@ -29,10 +29,11 @@ export async function GET(request: NextRequest) {
       const safeSlug = (page.slug || "document").replace(/[^a-zA-Z0-9_-]/g, "_");
 
       if (format === "md") {
-        // Fetch any attached files metadata
+        const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
         const fileIds = (page.blocks || [])
           .filter((b: any) => b.type === "file")
-          .map((b: any) => b.data.fileId);
+          .map((b: any) => b.data.fileId)
+          .filter((id: string) => id && UUID_REGEX.test(id));
 
         let filesMap: Record<string, any> = {};
         if (fileIds.length > 0) {

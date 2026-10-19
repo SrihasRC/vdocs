@@ -48,7 +48,7 @@ export const noteBlockDataSchema = z.object({
 });
 
 export const fileBlockDataSchema = z.object({
-  fileId: z.string().min(1, "File ID is required"),
+  fileId: z.string().default(""),
   caption: z.string().optional(),
 });
 

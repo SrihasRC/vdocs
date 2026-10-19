@@ -76,9 +76,11 @@ export default async function Page({ params }: Props) {
       .orderBy(asc(pages.position));
 
     // Fetch any attached files metadata
+    const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
     const fileIds = dbPage.blocks
       .filter((b): b is Extract<Block, { type: "file" }> => b.type === "file")
-      .map((b) => b.data.fileId);
+      .map((b) => b.data.fileId)
+      .filter((id) => id && UUID_REGEX.test(id));
 
     let filesMap: Record<string, any> = {};
     if (fileIds.length > 0) {

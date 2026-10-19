@@ -39,10 +39,15 @@ export async function getFilesList(): Promise<FileRecord[]> {
   }
 }
 
+const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
 /**
  * Fetch single file record by ID
  */
 export async function getFile(id: string): Promise<FileRecord | null> {
+  if (!id || !UUID_REGEX.test(id)) {
+    return null;
+  }
   try {
     const results = await db.select().from(files).where(eq(files.id, id)).limit(1);
     return results[0] || null;

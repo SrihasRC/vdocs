@@ -4,6 +4,7 @@ import { FileBlock } from "@/lib/db/schema";
 import { Download, FileText, Paperclip, CheckCircle2 } from "lucide-react";
 import { useState } from "react";
 import { getFileDownloadUrl } from "@/app/actions/files";
+import { cn } from "@/lib/utils";
 
 interface FileBlockProps {
   block: FileBlock;
@@ -32,12 +33,13 @@ export function FileBlockRenderer({ block, fileData }: FileBlockProps) {
     return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
   };
 
-  const label = fileData?.label || (fileId ? `File (${fileId.slice(0, 8)})` : "Unassigned File");
-  const kind = fileData?.kind || "file";
-  const size = formatSize(fileData?.sizeBytes);
+  const isUnassigned = !fileData;
+  const label = fileData?.label || (caption ? caption : "Attachment (No file selected)");
+  const kind = fileData?.kind || "attachment";
+  const size = fileData ? formatSize(fileData.sizeBytes) : null;
 
   const handleDownload = async () => {
-    if (!fileId) return;
+    if (!fileId || isUnassigned) return;
     setDownloading(true);
     try {
       const res = await getFileDownloadUrl(fileId);
@@ -57,7 +59,10 @@ export function FileBlockRenderer({ block, fileData }: FileBlockProps) {
   return (
     <div
       id={blockAnchor}
-      className="my-5 rounded-lg border border-fd-border bg-fd-card/50 p-4 shadow-sm scroll-mt-20 hover:border-fd-primary/30 transition-colors"
+      className={cn(
+        "my-5 rounded-lg border border-fd-border bg-fd-card/50 p-4 shadow-sm scroll-mt-20 hover:border-fd-primary/30 transition-colors",
+        isUnassigned && "border-dashed border-fd-border/70"
+      )}
     >
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div className="flex items-start sm:items-center gap-3.5 min-w-0">
@@ -85,7 +90,7 @@ export function FileBlockRenderer({ block, fileData }: FileBlockProps) {
               )}
             </div>
             <p className="text-xs text-fd-muted-foreground">
-              {size} {fileData?.mimeType && `• ${fileData.mimeType}`}
+              {size ? `${size} ${fileData?.mimeType ? `• ${fileData.mimeType}` : ""}` : "Click Edit (E) to upload or select a file from your vault."}
             </p>
           </div>
         </div>
@@ -93,12 +98,12 @@ export function FileBlockRenderer({ block, fileData }: FileBlockProps) {
         <div className="shrink-0 flex items-center gap-2">
           <button
             type="button"
-            disabled={downloading || !fileId}
+            disabled={downloading || isUnassigned}
             onClick={handleDownload}
-            className="inline-flex items-center gap-1.5 rounded-lg border border-fd-border bg-fd-secondary/30 px-3.5 py-2 text-xs font-medium text-fd-foreground hover:bg-fd-secondary/60 hover:border-amber-400/40 hover:text-amber-400 transition-colors disabled:opacity-50"
+            className="inline-flex items-center gap-1.5 rounded-lg border border-fd-border bg-fd-secondary/30 px-3.5 py-2 text-xs font-medium text-fd-foreground hover:bg-fd-secondary/60 hover:border-amber-400/40 hover:text-amber-400 transition-colors disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
           >
             <Download className="h-3.5 w-3.5 text-amber-400" />
-            {downloading ? "Preparing..." : "Download"}
+            {isUnassigned ? "No File Attached" : downloading ? "Preparing..." : "Download"}
           </button>
         </div>
       </div>
