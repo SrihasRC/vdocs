@@ -391,7 +391,7 @@ export function StorageManagerView({ initialSummary }: StorageManagerViewProps) 
                 <tr className="border-b border-fd-border/70 bg-fd-secondary/30 text-fd-muted-foreground text-[11px]">
                   <th className="py-2.5 px-3.5 font-medium">File Label & Name</th>
                   <th className="py-2.5 px-3 font-medium">Category</th>
-                  <th className="py-2.5 px-3 font-medium">Version</th>
+                  <th className="py-2.5 px-3 font-medium">Type</th>
                   <th className="py-2.5 px-3 font-medium">Size</th>
                   <th className="py-2.5 px-3 font-medium">Used in Pages</th>
                   <th className="py-2.5 px-3.5 font-medium text-right">Actions</th>
@@ -399,7 +399,6 @@ export function StorageManagerView({ initialSummary }: StorageManagerViewProps) 
               </thead>
               <tbody className="divide-y divide-fd-border/40">
                 {filteredFiles.map((file) => {
-                  const isCurrent = file.isCurrent;
                   const getIcon = () => {
                     if (file.kind === "resume") return <FileText className="size-4 text-amber-400" />;
                     if (file.kind === "certificate") return <FileCheck className="size-4 text-emerald-400" />;
@@ -433,19 +432,9 @@ export function StorageManagerView({ initialSummary }: StorageManagerViewProps) 
                         </span>
                       </td>
 
-                      {/* Version */}
-                      <td className="py-3 px-3 align-middle">
-                        <div className="flex items-center gap-1.5">
-                          <span className="rounded-md border border-amber-400/30 bg-amber-400/10 px-1.5 py-0.5 text-[10px] font-mono text-amber-400 font-semibold">
-                            v{file.version}
-                          </span>
-                          {isCurrent && (
-                            <span className="inline-flex items-center gap-1 text-[10px] font-medium text-emerald-400">
-                              <CheckCircle2 className="size-3" />
-                              Current
-                            </span>
-                          )}
-                        </div>
+                      {/* Type */}
+                      <td className="py-3 px-3 align-middle font-mono text-fd-muted-foreground text-[11px]">
+                        {file.mimeType ? file.mimeType.split("/")[1] || file.mimeType : "file"}
                       </td>
 
                       {/* Size */}

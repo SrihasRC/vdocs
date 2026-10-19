@@ -15,18 +15,25 @@ export function proxy(request: NextRequest) {
     return NextResponse.redirect(new URL("/docs", request.url));
   }
 
-  // Allow auth API routes, login page, and Next.js internal static assets
+  // Allow auth API routes, files API, login page, static public files, and Next.js assets
   if (
     pathname.startsWith("/api/auth") ||
+    pathname.startsWith("/api/files") ||
     pathname.startsWith("/login") ||
     pathname.startsWith("/_next") ||
-    pathname.startsWith("/favicon.ico")
+    pathname.startsWith("/pdf.worker") ||
+    /\.(ico|svg|png|jpg|jpeg|gif|webp|mjs|js|css|woff2?)$/i.test(pathname)
   ) {
     return NextResponse.next();
   }
 
-  // If unauthenticated, redirect to login
+  // If unauthenticated:
   if (!isAuthenticated) {
+    // API endpoints should return JSON 401 rather than redirecting to HTML login page
+    if (pathname.startsWith("/api/")) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
     const loginUrl = new URL("/login", request.url);
     if (pathname !== "/" && pathname !== "/docs") {
       loginUrl.searchParams.set("callbackUrl", pathname);

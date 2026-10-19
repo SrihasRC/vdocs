@@ -208,8 +208,8 @@ export function FileEditor({ block, onChange }: FileEditorProps) {
                         <span className="font-medium text-fd-foreground">
                           {f.label}
                         </span>
-                        <span className="ml-2 text-[10px] text-fd-muted-foreground font-mono uppercase">
-                          ({f.kind}) • v{f.version} • {sizeKb} KB
+                        <span className="ml-2 text-[10px] text-fd-muted-foreground font-mono">
+                          • {sizeKb} KB
                         </span>
                       </div>
                     </div>

@@ -140,6 +140,27 @@ export async function deleteR2Object(storageKey: string): Promise<void> {
 }
 
 /**
+ * Get an object stream directly from Cloudflare R2.
+ */
+export async function getR2Object(storageKey: string) {
+  if (!isR2Configured()) {
+    throw new Error(
+      "Cloudflare R2 is not configured. Please set R2_ACCOUNT_ID, R2_ACCESS_KEY_ID, R2_SECRET_ACCESS_KEY, and R2_BUCKET_NAME in your environment."
+    );
+  }
+
+  const client = getR2Client();
+  const bucket = getR2BucketName();
+
+  const command = new GetObjectCommand({
+    Bucket: bucket,
+    Key: storageKey,
+  });
+
+  return await client.send(command);
+}
+
+/**
  * Query bucket statistics directly from Cloudflare R2
  */
 export async function getR2BucketStats(): Promise<{

@@ -1,10 +1,29 @@
 "use client";
 
 import { FileBlock } from "@/lib/db/schema";
-import { Download, FileText, Paperclip, CheckCircle2 } from "lucide-react";
+import {
+  Download,
+  FileText,
+  Eye,
+  EyeOff,
+  ExternalLink,
+  Loader2,
+  FileCode,
+} from "lucide-react";
 import { useState } from "react";
 import { getFileDownloadUrl } from "@/app/actions/files";
 import { cn } from "@/lib/utils";
+import dynamic from "next/dynamic";
+
+const PdfViewer = dynamic(() => import("./pdf-viewer"), {
+  ssr: false,
+  loading: () => (
+    <div className="w-full h-48 rounded-xl border border-fd-border/70 bg-neutral-950/40 flex items-center justify-center text-xs text-fd-muted-foreground gap-2">
+      <Loader2 className="h-4 w-4 animate-spin text-amber-400" />
+      <span>Loading PDF viewer...</span>
+    </div>
+  ),
+});
 
 interface FileBlockProps {
   block: FileBlock;
@@ -25,6 +44,7 @@ export function FileBlockRenderer({ block, fileData }: FileBlockProps) {
   const { fileId, caption } = block.data;
   const blockAnchor = `block-${block.id}`;
   const [downloading, setDownloading] = useState(false);
+  const [showPreview, setShowPreview] = useState(false);
 
   const formatSize = (bytes?: number) => {
     if (!bytes) return "0 KB";
@@ -35,8 +55,18 @@ export function FileBlockRenderer({ block, fileData }: FileBlockProps) {
 
   const isUnassigned = !fileData;
   const label = fileData?.label || (caption ? caption : "Attachment (No file selected)");
-  const kind = fileData?.kind || "attachment";
   const size = fileData ? formatSize(fileData.sizeBytes) : null;
+
+  const isPdf =
+    fileData?.mimeType?.toLowerCase().includes("pdf") ||
+    label.toLowerCase().endsWith(".pdf") ||
+    fileData?.downloadUrl?.toLowerCase().includes(".pdf");
+
+  const isImage =
+    fileData?.mimeType?.toLowerCase().startsWith("image/") ||
+    /\.(png|jpe?g|webp|gif|svg)$/i.test(label);
+
+  const canPreview = Boolean(fileId && (isPdf || isImage));
 
   const handleDownload = async () => {
     if (!fileId || isUnassigned) return;
@@ -46,86 +76,138 @@ export function FileBlockRenderer({ block, fileData }: FileBlockProps) {
       if (res.url) {
         window.open(res.url, "_blank");
       } else {
-        // Fallback to route handler
-        window.open(`/api/files/${fileId}`, "_blank");
+        window.open(`/api/files/${fileId}?download=1`, "_blank");
       }
     } catch {
-      window.open(`/api/files/${fileId}`, "_blank");
+      window.open(`/api/files/${fileId}?download=1`, "_blank");
     } finally {
       setDownloading(false);
     }
   };
 
+  // Hide generic boilerplate captions like "Download attachment"
+  const displayCaption =
+    caption &&
+    caption.trim().toLowerCase() !== "download attachment" &&
+    caption.trim().toLowerCase() !== label.trim().toLowerCase()
+      ? caption.trim()
+      : null;
+
+  const previewUrl = fileId ? `/api/files/${fileId}` : "";
+
   return (
     <div
       id={blockAnchor}
       className={cn(
-        "my-5 rounded-lg border border-fd-border bg-fd-card/50 p-4 shadow-sm scroll-mt-20 hover:border-fd-primary/30 transition-colors",
-        isUnassigned && "border-dashed border-fd-border/70"
+        "my-4 rounded-xl border border-fd-border/70 bg-fd-card/40 overflow-hidden shadow-xs hover:border-fd-border transition-colors scroll-mt-20",
+        isUnassigned && "border-dashed border-fd-border/60"
       )}
     >
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div className="flex items-start sm:items-center gap-3.5 min-w-0">
-          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg border border-fd-border bg-fd-secondary/30 text-amber-400">
-            <FileText className="h-5 w-5" />
+      <div className="p-3.5 sm:p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3.5">
+        {/* File info */}
+        <div className="flex items-start sm:items-center gap-3 min-w-0">
+          <div
+            className={cn(
+              "flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border",
+              isPdf
+                ? "border-rose-500/20 bg-rose-500/10 text-rose-400"
+                : "border-amber-500/20 bg-amber-500/10 text-amber-400"
+            )}
+          >
+            {isPdf ? (
+              <FileText className="h-5 w-5" />
+            ) : (
+              <FileCode className="h-5 w-5" />
+            )}
           </div>
-          <div className="min-w-0 space-y-1">
-            <div className="flex items-center gap-2 flex-wrap">
-              <span className="font-semibold text-fd-foreground truncate text-sm">
+
+          <div className="min-w-0 space-y-0.5">
+            <div className="flex items-center gap-2">
+              <span className="font-medium text-fd-foreground truncate text-sm">
                 {label}
               </span>
-              <span className="rounded-md border border-fd-border/70 bg-fd-secondary/40 px-1.5 py-0.5 text-[10px] font-mono text-fd-muted-foreground uppercase">
-                {kind}
-              </span>
-              {fileData?.version && (
-                <span className="rounded-md border border-amber-500/20 bg-amber-500/10 px-1.5 py-0.5 text-[10px] font-mono text-amber-400">
-                  v{fileData.version}
-                </span>
-              )}
-              {fileData?.isCurrent && (
-                <span className="inline-flex items-center gap-1 text-[10px] font-medium text-emerald-400">
-                  <CheckCircle2 className="h-3 w-3" />
-                  Current
-                </span>
-              )}
             </div>
-            <p className="text-xs text-fd-muted-foreground">
-              {size ? `${size} ${fileData?.mimeType ? `• ${fileData.mimeType}` : ""}` : "Click Edit (E) to upload or select a file from your vault."}
-            </p>
+
+            <div className="flex items-center gap-2 text-xs text-fd-muted-foreground">
+              {size && <span>{size}</span>}
+              {size && <span>•</span>}
+              <span>{isPdf ? "PDF Document" : fileData?.mimeType || "File"}</span>
+            </div>
+
+            {displayCaption && (
+              <p className="text-xs text-fd-muted-foreground/80 pt-0.5 italic">
+                {displayCaption}
+              </p>
+            )}
           </div>
         </div>
 
-        <div className="shrink-0 flex items-center gap-2">
+        {/* Action Buttons */}
+        <div className="shrink-0 flex items-center gap-2 self-end sm:self-center">
+          {canPreview && (
+            <button
+              type="button"
+              onClick={() => setShowPreview((prev) => !prev)}
+              className={cn(
+                "inline-flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-xs font-medium transition-colors cursor-pointer",
+                showPreview
+                  ? "border-amber-400/40 bg-amber-400/10 text-amber-400"
+                  : "border-fd-border bg-fd-secondary/30 text-fd-foreground hover:bg-fd-secondary/70 hover:text-amber-400"
+              )}
+            >
+              {showPreview ? (
+                <>
+                  <EyeOff className="h-3.5 w-3.5 text-amber-400" />
+                  <span>Hide</span>
+                </>
+              ) : (
+                <>
+                  <Eye className="h-3.5 w-3.5 text-amber-400" />
+                  <span>Preview</span>
+                </>
+              )}
+            </button>
+          )}
+
+          {fileId && !isUnassigned && (
+            <a
+              href={`/api/files/${fileId}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              title="Open file in new tab"
+              className="inline-flex items-center justify-center h-8 w-8 rounded-lg border border-fd-border bg-fd-secondary/30 text-fd-muted-foreground hover:text-fd-foreground hover:bg-fd-secondary/70 transition-colors"
+            >
+              <ExternalLink className="h-3.5 w-3.5" />
+            </a>
+          )}
+
           <button
             type="button"
             disabled={downloading || isUnassigned}
             onClick={handleDownload}
-            className="inline-flex items-center gap-1.5 rounded-lg border border-fd-border bg-fd-secondary/30 px-3.5 py-2 text-xs font-medium text-fd-foreground hover:bg-fd-secondary/60 hover:border-amber-400/40 hover:text-amber-400 transition-colors disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
+            className="inline-flex items-center gap-1.5 rounded-lg border border-fd-border bg-fd-secondary/30 px-3 py-1.5 text-xs font-medium text-fd-foreground hover:bg-fd-secondary/70 hover:border-amber-400/40 hover:text-amber-400 transition-colors disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
           >
             <Download className="h-3.5 w-3.5 text-amber-400" />
-            {isUnassigned ? "No File Attached" : downloading ? "Preparing..." : "Download"}
+            {isUnassigned ? "No File" : downloading ? "Downloading..." : "Download"}
           </button>
         </div>
       </div>
 
-      {/* Tags if present */}
-      {fileData?.tags && fileData.tags.length > 0 && (
-        <div className="mt-3 flex items-center gap-1.5 flex-wrap">
-          {fileData.tags.map((tag) => (
-            <span
-              key={tag}
-              className="rounded bg-fd-secondary/50 px-1.5 py-0.5 text-[10px] font-mono text-fd-muted-foreground"
-            >
-              #{tag}
-            </span>
-          ))}
-        </div>
-      )}
-
-      {caption && (
-        <div className="mt-3 pt-2.5 border-t border-fd-border/40 text-xs text-fd-muted-foreground flex items-center gap-1.5">
-          <Paperclip className="h-3 w-3 text-amber-400/80 shrink-0" />
-          <span>{caption}</span>
+      {/* Inline Preview Container */}
+      {showPreview && canPreview && (
+        <div className="border-t border-fd-border/50 bg-neutral-950/40 p-2 sm:p-3">
+          {isPdf ? (
+            <PdfViewer url={previewUrl} title={label} />
+          ) : isImage ? (
+            <div className="flex justify-center p-3">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={previewUrl}
+                alt={label}
+                className="max-h-[500px] rounded-lg border border-fd-border/60 object-contain shadow-md"
+              />
+            </div>
+          ) : null}
         </div>
       )}
     </div>
