@@ -3,6 +3,7 @@ import {
   PutObjectCommand,
   GetObjectCommand,
   DeleteObjectCommand,
+  ListObjectsV2Command,
 } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 
@@ -109,4 +110,65 @@ export async function deleteR2Object(storageKey: string): Promise<void> {
   });
 
   await client.send(command);
+}
+
+/**
+ * Query bucket statistics directly from Cloudflare R2
+ */
+export async function getR2BucketStats(): Promise<{
+  configured: boolean;
+  bucket: string;
+  accountId: string;
+  endpoint: string;
+  totalObjects: number;
+  totalSizeBytes: number;
+  error?: string;
+}> {
+  const configured = isR2Configured();
+  const bucket = getR2BucketName();
+  const accountId = process.env.R2_ACCOUNT_ID || "";
+  const maskedAccount =
+    accountId.length > 8 ? `${accountId.slice(0, 4)}...${accountId.slice(-4)}` : accountId;
+  const endpoint = accountId ? `https://${accountId}.r2.cloudflarestorage.com` : "";
+
+  if (!configured) {
+    return {
+      configured: false,
+      bucket,
+      accountId: maskedAccount,
+      endpoint,
+      totalObjects: 0,
+      totalSizeBytes: 0,
+      error: "R2 credentials not fully defined in .env.local",
+    };
+  }
+
+  try {
+    const client = getR2Client();
+    const command = new ListObjectsV2Command({
+      Bucket: bucket,
+    });
+    const res = await client.send(command);
+    const objects = res.Contents || [];
+    const totalSizeBytes = objects.reduce((sum, obj) => sum + (obj.Size || 0), 0);
+
+    return {
+      configured: true,
+      bucket,
+      accountId: maskedAccount,
+      endpoint,
+      totalObjects: objects.length,
+      totalSizeBytes,
+    };
+  } catch (err: any) {
+    return {
+      configured: true,
+      bucket,
+      accountId: maskedAccount,
+      endpoint,
+      totalObjects: 0,
+      totalSizeBytes: 0,
+      error: err.message || "Failed to query Cloudflare R2 bucket",
+    };
+  }
 }

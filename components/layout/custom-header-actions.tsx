@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { useTheme } from "next-themes";
 import { useSpaciousLayout } from "@fumadocs/base-ui/layouts/spacious";
 import {
@@ -13,10 +14,11 @@ import {
 import { CreateCategoryDialog } from "@/components/editor/create-category-dialog";
 import { CreatePageDialog } from "@/components/editor/create-page-dialog";
 import { VaultBackupDialog } from "@/components/export/vault-backup-dialog";
-import { Ellipsis, HardDrive, Monitor, Moon, Sun, FolderPlus, FilePlus } from "lucide-react";
+import { Ellipsis, HardDrive, Monitor, Moon, Sun, FolderPlus, FilePlus, Cloud } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 export function CustomHeaderActions({ className, ...props }: React.ComponentProps<"div">) {
+  const router = useRouter();
   const { menuItems } = useSpaciousLayout();
   const [backupOpen, setBackupOpen] = useState(false);
   const [createCategoryOpen, setCreateCategoryOpen] = useState(false);
@@ -75,6 +77,15 @@ export function CustomHeaderActions({ className, ...props }: React.ComponentProp
             >
               <FolderPlus className="size-3.5 text-amber-400" />
               <span>New Category...</span>
+            </DropdownMenuItem>
+
+            {/* Files & R2 Storage */}
+            <DropdownMenuItem
+              onClick={() => router.push("/docs/files")}
+              className="cursor-pointer gap-2.5 px-2.5 py-2 text-xs rounded-lg text-fd-foreground hover:bg-fd-accent/70 focus:bg-fd-accent/70"
+            >
+              <Cloud className="size-3.5 text-amber-400" />
+              <span>Files & R2 Storage</span>
             </DropdownMenuItem>
 
             {/* Vault Backup & Export */}

@@ -219,6 +219,13 @@ export function buildPageTreeFromPages(
     categoryLabel: "Introduction",
   });
 
+  // Add Files & Storage explorer to Vault navigation
+  vaultFolder.children.push({
+    type: "page",
+    name: "Files & Storage",
+    url: `${baseUrl}/files`,
+  });
+
   // Build All Category Sections
   const sortedCategories = Array.from(knownCategories.entries()).sort(
     (a, b) => a[1].sortOrder - b[1].sortOrder

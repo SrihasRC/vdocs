@@ -1,13 +1,14 @@
 "use server";
 
 import { db } from "@/lib/db";
-import { files, FileRecord, NewFileRecord } from "@/lib/db/schema";
+import { files, pages, FileRecord, NewFileRecord } from "@/lib/db/schema";
 import { eq, desc, and } from "drizzle-orm";
 import {
   isR2Configured,
   getPresignedUploadUrl,
   getPresignedDownloadUrl,
   deleteR2Object,
+  getR2BucketStats,
 } from "@/lib/r2";
 import { revalidatePath } from "next/cache";
 
@@ -170,4 +171,75 @@ export async function deleteFileAction(fileId: string): Promise<boolean> {
     console.error("Failed to delete file:", err);
     return false;
   }
+}
+
+export interface StorageSummary {
+  r2Stats: {
+    configured: boolean;
+    bucket: string;
+    accountId: string;
+    endpoint: string;
+    totalObjects: number;
+    totalSizeBytes: number;
+    error?: string;
+  };
+  dbFiles: (FileRecord & { referencedInPagesCount: number; pagesTitles: string[] })[];
+  stats: {
+    totalFiles: number;
+    totalBytes: number;
+    resumesCount: number;
+    certificatesCount: number;
+    photosCount: number;
+    otherCount: number;
+  };
+}
+
+/**
+ * Returns comprehensive R2 bucket and database files summary
+ */
+export async function getR2StorageSummary(): Promise<StorageSummary> {
+  const r2Stats = await getR2BucketStats();
+  const allDbFiles = await db.select().from(files).orderBy(desc(files.createdAt));
+  const allPages = await db
+    .select({ id: pages.id, title: pages.title, blocks: pages.blocks })
+    .from(pages);
+
+  // Map fileId to pages that reference it
+  const fileUsageMap = new Map<string, string[]>();
+  for (const page of allPages) {
+    const blocks = (page.blocks || []) as any[];
+    for (const b of blocks) {
+      if (b.type === "file" && b.data?.fileId) {
+        const list = fileUsageMap.get(b.data.fileId) || [];
+        if (!list.includes(page.title)) {
+          list.push(page.title);
+        }
+        fileUsageMap.set(b.data.fileId, list);
+      }
+    }
+  }
+
+  const enrichedFiles = allDbFiles.map((f) => {
+    const pageTitles = fileUsageMap.get(f.id) || [];
+    return {
+      ...f,
+      referencedInPagesCount: pageTitles.length,
+      pagesTitles: pageTitles,
+    };
+  });
+
+  const stats = {
+    totalFiles: allDbFiles.length,
+    totalBytes: allDbFiles.reduce((acc, f) => acc + (f.sizeBytes || 0), 0),
+    resumesCount: allDbFiles.filter((f) => f.kind === "resume").length,
+    certificatesCount: allDbFiles.filter((f) => f.kind === "certificate").length,
+    photosCount: allDbFiles.filter((f) => f.kind === "photo").length,
+    otherCount: allDbFiles.filter((f) => f.kind === "other").length,
+  };
+
+  return {
+    r2Stats,
+    dbFiles: enrichedFiles,
+    stats,
+  };
 }
