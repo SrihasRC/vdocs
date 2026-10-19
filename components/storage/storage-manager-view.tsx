@@ -210,19 +210,16 @@ export function StorageManagerView({ initialSummary }: StorageManagerViewProps) 
   });
 
   return (
-    <div className="space-y-6 max-w-6xl mx-auto py-2">
+    <div className="space-y-6 max-w-6xl mx-auto">
       {/* Header Bar */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-fd-border/70">
         <div>
           <div className="flex items-center gap-2.5">
-            <div className="p-2 rounded-xl bg-amber-400/10 border border-amber-400/30 text-amber-400">
-              <Cloud className="size-5" />
-            </div>
             <div>
               <h1 className="text-xl font-bold tracking-tight text-fd-foreground">
                 Cloudflare R2 Storage & File Vault
               </h1>
-              <p className="text-xs text-fd-muted-foreground mt-0.5">
+              <p className="text-xs text-fd-muted-foreground">
                 Direct S3-compatible private object storage with zero egress fees and automatic file versioning.
               </p>
             </div>
@@ -313,10 +310,10 @@ export function StorageManagerView({ initialSummary }: StorageManagerViewProps) 
             <Paperclip className="size-4 text-amber-400" />
           </div>
           <div className="grid grid-cols-2 gap-1 text-[11px] font-mono text-fd-muted-foreground">
-            <div>📄 Resumes: <span className="text-fd-foreground font-semibold">{summary?.stats.resumesCount || 0}</span></div>
-            <div>🎓 Certs: <span className="text-fd-foreground font-semibold">{summary?.stats.certificatesCount || 0}</span></div>
-            <div>🖼 Photos: <span className="text-fd-foreground font-semibold">{summary?.stats.photosCount || 0}</span></div>
-            <div>📦 Other: <span className="text-fd-foreground font-semibold">{summary?.stats.otherCount || 0}</span></div>
+            <div>Resumes: <span className="text-fd-foreground font-semibold">{summary?.stats.resumesCount || 0}</span></div>
+            <div>Certs: <span className="text-fd-foreground font-semibold">{summary?.stats.certificatesCount || 0}</span></div>
+            <div>Photos: <span className="text-fd-foreground font-semibold">{summary?.stats.photosCount || 0}</span></div>
+            <div>Other: <span className="text-fd-foreground font-semibold">{summary?.stats.otherCount || 0}</span></div>
           </div>
         </div>
       </div>
