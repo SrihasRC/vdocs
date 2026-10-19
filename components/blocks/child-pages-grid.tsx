@@ -6,6 +6,7 @@ import Link from "next/link";
 import { ArrowRight, Trash2 } from "lucide-react";
 import { deletePage } from "@/app/actions/pages";
 import { ConfirmDeleteDialog } from "@/components/ui/confirm-delete-dialog";
+import { TagChip } from "@/components/ui/tag-chip";
 
 export interface ChildPageItem {
   id: string;
@@ -96,12 +97,7 @@ export function ChildPagesGrid({
               {page.tags && page.tags.length > 0 && (
                 <div className="mt-3 flex items-center gap-1.5 flex-wrap">
                   {page.tags.map((tag) => (
-                    <span
-                      key={tag}
-                      className="rounded border border-fd-border/60 bg-fd-secondary/20 px-1.5 py-0.5 text-[10px] font-mono text-fd-muted-foreground"
-                    >
-                      #{tag}
-                    </span>
+                    <TagChip key={tag} tag={tag} size="xs" asSpan />
                   ))}
                 </div>
               )}

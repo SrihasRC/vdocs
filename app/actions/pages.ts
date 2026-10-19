@@ -671,4 +671,101 @@ export async function duplicatePage(pageId: string) {
   }
 }
 
+/**
+ * Promotes a single block into a brand new document in a selected category,
+ * optionally removing it from the source page.
+ */
+export async function promoteBlockToPage({
+  sourcePageId,
+  block,
+  title,
+  category = "commands",
+  removeSourceBlock = true,
+}: {
+  sourcePageId: string;
+  block: Block;
+  title: string;
+  category?: string;
+  removeSourceBlock?: boolean;
+}) {
+  try {
+    const cleanCategory = (category || "").trim().replace(/^\/+|\/+$/g, "");
+    let baseSlug = title
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/^-|-$/g, "");
+    if (!baseSlug) baseSlug = "promoted-note";
+
+    let newSlug = baseSlug;
+    let newPath = cleanCategory ? `${cleanCategory}/${newSlug}` : newSlug;
+    let counter = 1;
+
+    while (true) {
+      const [existing] = await db
+        .select({ id: pages.id })
+        .from(pages)
+        .where(eq(pages.path, newPath));
+      if (!existing) break;
+      counter++;
+      newSlug = `${baseSlug}-${counter}`;
+      newPath = cleanCategory ? `${cleanCategory}/${newSlug}` : newSlug;
+    }
+
+    // Determine template
+    let template = "note";
+    if (block.type === "command") template = "command";
+    else if (block.type === "qa") template = "qa";
+    else if (block.type === "steps") template = "steps";
+
+    const searchText = flattenBlocksToSearchText(title, [block], [cleanCategory].filter(Boolean));
+
+    const [newPage] = await db
+      .insert(pages)
+      .values({
+        parentId: null,
+        slug: newSlug,
+        path: newPath,
+        title,
+        template,
+        blocks: [block],
+        tags: cleanCategory ? [cleanCategory] : [],
+        status: "published",
+        searchText,
+      })
+      .returning();
+
+    // Optionally remove block from source page
+    if (removeSourceBlock && sourcePageId) {
+      const [sourcePage] = await db
+        .select()
+        .from(pages)
+        .where(eq(pages.id, sourcePageId));
+      if (sourcePage) {
+        const remainingBlocks = ((sourcePage.blocks as Block[]) || []).filter(
+          (b) => b.id !== block.id
+        );
+        const updatedSearchText = flattenBlocksToSearchText(
+          sourcePage.title,
+          remainingBlocks,
+          sourcePage.tags || []
+        );
+        await db
+          .update(pages)
+          .set({
+            blocks: remainingBlocks,
+            searchText: updatedSearchText,
+            updatedAt: new Date(),
+          })
+          .where(eq(pages.id, sourcePageId));
+      }
+    }
+
+    revalidatePath("/docs", "layout");
+    return { success: true, newPath, pageId: newPage.id };
+  } catch (err: any) {
+    console.error("Failed to promote block:", err);
+    return { success: false, error: err?.message || "Failed to promote block" };
+  }
+}
+
 

@@ -10,6 +10,7 @@ import { QAEditor } from "./qa-editor";
 import { NoteEditor } from "./note-editor";
 import { FileEditor } from "./file-editor";
 import { CalloutEditor } from "./callout-editor";
+import { KVEditor } from "./kv-editor";
 import {
   GripVertical,
   ChevronDown,
@@ -22,6 +23,8 @@ import {
   ListOrdered,
   Paperclip,
   AlertCircle,
+  TableProperties,
+  FileUp,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -31,6 +34,7 @@ interface SortableBlockProps {
   onChange: (updated: Block) => void;
   onDuplicate: (block: Block) => void;
   onDelete: (blockId: string) => void;
+  onPromote?: (block: Block) => void;
 }
 
 export function SortableBlock({
@@ -38,6 +42,7 @@ export function SortableBlock({
   onChange,
   onDuplicate,
   onDelete,
+  onPromote,
 }: SortableBlockProps) {
   const [expanded, setExpanded] = useState(true);
 
@@ -99,6 +104,14 @@ export function SortableBlock({
             block.data.title ||
             (block.data.content.slice(0, 40) || "Callout alert"),
         };
+      case "kv":
+        return {
+          icon: <TableProperties className="h-3.5 w-3.5 text-amber-400" />,
+          label: "Cheatsheet / KV",
+          preview:
+            block.data.title ||
+            `${block.data.rows?.length || 0} Key-Value Entries`,
+        };
     }
   };
 
@@ -151,6 +164,19 @@ export function SortableBlock({
             <Copy className="h-3.5 w-3.5" />
           </Button>
 
+          {onPromote && (
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              onClick={() => onPromote(block)}
+              className="h-7 w-7 text-fd-muted-foreground hover:text-amber-400 hover:bg-amber-400/10 cursor-pointer"
+              title="Promote block to new document"
+            >
+              <FileUp className="h-3.5 w-3.5" />
+            </Button>
+          )}
+
           <Button
             type="button"
             variant="ghost"
@@ -198,6 +224,9 @@ export function SortableBlock({
           )}
           {block.type === "callout" && (
             <CalloutEditor block={block} onChange={onChange} />
+          )}
+          {block.type === "kv" && (
+            <KVEditor block={block} onChange={onChange} />
           )}
         </div>
       )}

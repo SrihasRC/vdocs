@@ -113,6 +113,24 @@ export function pageToMarkdown(
         lines.push("");
         break;
       }
+
+      case "kv": {
+        const { title, description, rows = [] } = block.data;
+        if (title) lines.push(`### ${title}\n`);
+        if (description) lines.push(`${description}\n`);
+        if (rows && rows.length > 0) {
+          lines.push("| Key | Value | Description |");
+          lines.push("| :--- | :--- | :--- |");
+          for (const row of rows) {
+            const cleanKey = (row.key || "").replace(/\|/g, "\\|");
+            const cleanVal = (row.value || "").replace(/\|/g, "\\|");
+            const cleanDesc = (row.description || "").replace(/\|/g, "\\|");
+            lines.push(`| \`${cleanKey}\` | \`${cleanVal}\` | ${cleanDesc} |`);
+          }
+          lines.push("");
+        }
+        break;
+      }
     }
   }
 

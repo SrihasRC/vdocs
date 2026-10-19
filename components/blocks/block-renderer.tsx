@@ -7,6 +7,7 @@ import { QABlockRenderer } from "./qa-block";
 import { NoteBlockRenderer } from "./note-block";
 import { FileBlockRenderer } from "./file-block";
 import { CalloutBlockRenderer } from "./callout-block";
+import { KVBlockRenderer } from "./kv-block";
 
 interface BlockListRendererProps {
   blocks: Block[];
@@ -36,6 +37,8 @@ export function BlockListRenderer({ blocks, files = {} }: BlockListRendererProps
             return <NoteBlockRenderer key={block.id} block={block} />;
           case "callout":
             return <CalloutBlockRenderer key={block.id} block={block} />;
+          case "kv":
+            return <KVBlockRenderer key={block.id} block={block} />;
           case "file":
             return (
               <FileBlockRenderer

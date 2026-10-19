@@ -24,6 +24,7 @@ import { SortableBlock } from "./sortable-block";
 import { AddBlockBar } from "./add-block-bar";
 import { PageSettingsDialog } from "./page-settings-dialog";
 import { CreatePageDialog } from "./create-page-dialog";
+import { PromoteBlockDialog } from "./promote-block-dialog";
 import { QuickCaptureDialog } from "@/components/quick-capture/quick-capture-dialog";
 import { savePageBlocks, duplicatePage } from "@/app/actions/pages";
 import { DraftBanner } from "@/components/blocks/draft-banner";
@@ -71,6 +72,7 @@ export function PageEditorView({
   const [showCreateSubpage, setShowCreateSubpage] = useState(false);
   const [showQuickCapture, setShowQuickCapture] = useState(false);
   const [isDuplicating, setIsDuplicating] = useState(false);
+  const [promotingBlock, setPromotingBlock] = useState<Block | null>(null);
 
   const handleDuplicate = async () => {
     setIsDuplicating(true);
@@ -293,6 +295,20 @@ export function PageEditorView({
           },
         };
         break;
+      case "kv":
+        newBlock = {
+          id,
+          type: "kv",
+          data: {
+            title: "Quick Reference",
+            description: "Key-value reference table",
+            rows: [
+              { key: "PORT", value: "3000", description: "Default HTTP server port" },
+              { key: "DEBUG", value: "true", description: "Enable verbose console logging" },
+            ],
+          },
+        };
+        break;
       case "file":
         newBlock = {
           id,
@@ -506,6 +522,7 @@ export function PageEditorView({
                     onChange={handleBlockChange}
                     onDuplicate={handleBlockDuplicate}
                     onDelete={handleBlockDelete}
+                    onPromote={(b) => setPromotingBlock(b)}
                   />
                 ))}
               </div>
@@ -571,6 +588,14 @@ export function PageEditorView({
         open={showQuickCapture}
         onOpenChange={setShowQuickCapture}
         defaultPageId={page.id}
+      />
+
+      {/* Promote Block Dialog */}
+      <PromoteBlockDialog
+        open={Boolean(promotingBlock)}
+        onOpenChange={(open) => !open && setPromotingBlock(null)}
+        block={promotingBlock}
+        sourcePageId={page.id}
       />
     </div>
   );

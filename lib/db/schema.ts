@@ -58,6 +58,20 @@ export const calloutBlockDataSchema = z.object({
   content: z.string().default(""),
 });
 
+export const kvBlockDataSchema = z.object({
+  title: z.string().optional(),
+  description: z.string().optional(),
+  rows: z
+    .array(
+      z.object({
+        key: z.string().default(""),
+        value: z.string().default(""),
+        description: z.string().optional(),
+      })
+    )
+    .default([]),
+});
+
 export const blockSchema = z.discriminatedUnion("type", [
   z.object({
     id: z.string(),
@@ -89,6 +103,11 @@ export const blockSchema = z.discriminatedUnion("type", [
     type: z.literal("callout"),
     data: calloutBlockDataSchema,
   }),
+  z.object({
+    id: z.string(),
+    type: z.literal("kv"),
+    data: kvBlockDataSchema,
+  }),
 ]);
 
 export type Block = z.infer<typeof blockSchema>;
@@ -98,6 +117,7 @@ export type QABlock = Extract<Block, { type: "qa" }>;
 export type NoteBlock = Extract<Block, { type: "note" }>;
 export type FileBlock = Extract<Block, { type: "file" }>;
 export type CalloutBlock = Extract<Block, { type: "callout" }>;
+export type KVBlock = Extract<Block, { type: "kv" }>;
 
 /* =========================================================================
    Application Tables (Pages, Files, Redirects)

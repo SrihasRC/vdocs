@@ -49,6 +49,16 @@ export function flattenBlocksToSearchText(
         if (block.data.title) parts.push(block.data.title);
         if (block.data.content) parts.push(block.data.content);
         break;
+
+      case "kv":
+        if (block.data.title) parts.push(block.data.title);
+        if (block.data.description) parts.push(block.data.description);
+        for (const row of block.data.rows || []) {
+          if (row.key) parts.push(row.key);
+          if (row.value) parts.push(row.value);
+          if (row.description) parts.push(row.description);
+        }
+        break;
     }
   }
 

@@ -15,6 +15,7 @@ import { BlockListRenderer } from "@/components/blocks/block-renderer";
 import { ChildPagesGrid } from "@/components/blocks/child-pages-grid";
 import { generateTocFromBlocks } from "@/lib/block-toc";
 import { PageEditorView } from "@/components/editor/page-editor-view";
+import { TagChip } from "@/components/ui/tag-chip";
 import { connection } from "next/server";
 
 export const instant = false;
@@ -99,12 +100,7 @@ export default async function Page({ params }: Props) {
           {dbPage.tags && dbPage.tags.length > 0 && (
             <div className="flex items-center gap-1.5 mt-1 flex-wrap">
               {dbPage.tags.map((tag) => (
-                <span
-                  key={tag}
-                  className="rounded-md border border-fd-border/70 bg-fd-secondary/30 px-2 py-0.5 text-xs font-mono text-fd-muted-foreground"
-                >
-                  #{tag}
-                </span>
+                <TagChip key={tag} tag={tag} />
               ))}
             </div>
           )}
