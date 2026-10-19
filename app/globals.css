@@ -149,3 +149,19 @@
     @apply font-sans;
   }
 }
+
+/* Ensure tables inside cards and components do not inherit prose margins or vertical borders */
+.not-prose table,
+[data-card] table,
+.rounded-xl table {
+  margin: 0 !important;
+  margin-top: 0 !important;
+  margin-bottom: 0 !important;
+  border-spacing: 0 !important;
+}
+
+.not-prose th,
+.not-prose td {
+  border-inline-start: none !important;
+}
+

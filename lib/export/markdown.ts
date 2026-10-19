@@ -93,7 +93,7 @@ export function pageToMarkdown(
         const fileName = fileInfo?.label || caption || "Download attachment";
         const fileSize = fileInfo?.sizeBytes ? ` (${(fileInfo.sizeBytes / 1024).toFixed(1)} KB)` : "";
 
-        lines.push(`### 📎 ${fileName}${fileSize}\n`);
+        lines.push(`### File: ${fileName}${fileSize}\n`);
         if (caption && caption !== fileName) lines.push(`${caption}\n`);
         lines.push(`[Download File](/api/files/${fileId})\n`);
         break;

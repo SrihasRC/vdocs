@@ -72,7 +72,7 @@ export function PromoteBlockDialog({
 
   // Create New Doc state
   const [title, setTitle] = useState("");
-  const [category, setCategory] = useState("commands");
+  const [category, setCategory] = useState("development");
   const [categories, setCategories] = useState<{ label: string; slug: string }[]>([]);
 
   // Shared state
@@ -247,7 +247,7 @@ export function PromoteBlockDialog({
                     <optgroup key={group} label={group}>
                       {pagesList.map((p) => (
                         <option key={p.id} value={p.id}>
-                          📄 {p.title} (/docs/{p.path})
+                          {p.title} (/docs/{p.path})
                         </option>
                       ))}
                     </optgroup>
@@ -343,8 +343,8 @@ export function PromoteBlockDialog({
                   ))
                 ) : (
                   <>
-                    <option value="commands">Commands (/docs/commands)</option>
-                    <option value="applications">Applications (/docs/applications)</option>
+                    <option value="development">Development (/docs/development)</option>
+                    <option value="maintenance">System Maintenance (/docs/maintenance)</option>
                     <option value="">Vault Root (/docs)</option>
                   </>
                 )}

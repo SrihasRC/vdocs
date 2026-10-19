@@ -426,8 +426,8 @@ export async function getVaultCategories() {
 
     const categoriesMap = new Map<string, { label: string; slug: string }>();
     categoriesMap.set("", { label: "Vault (Root)", slug: "" });
-    categoriesMap.set("commands", { label: "Commands", slug: "commands" });
-    categoriesMap.set("applications", { label: "Applications", slug: "applications" });
+    categoriesMap.set("development", { label: "Development", slug: "development" });
+    categoriesMap.set("maintenance", { label: "System Maintenance", slug: "maintenance" });
 
     for (const row of rootRows) {
       if (!row.path) continue;
@@ -447,8 +447,8 @@ export async function getVaultCategories() {
       success: true,
       categories: [
         { label: "Vault (Root)", slug: "" },
-        { label: "Commands", slug: "commands" },
-        { label: "Applications", slug: "applications" },
+        { label: "Development", slug: "development" },
+        { label: "System Maintenance", slug: "maintenance" },
       ],
     };
   }
@@ -481,8 +481,8 @@ export async function getAvailableMoveDestinations(currentPageId: string) {
     // Root categories
     const categoriesMap = new Map<string, string>();
     categoriesMap.set("", "Vault (Root)");
-    categoriesMap.set("commands", "Commands (Root)");
-    categoriesMap.set("applications", "Applications (Root)");
+    categoriesMap.set("development", "Development (Category)");
+    categoriesMap.set("maintenance", "System Maintenance (Category)");
 
     for (const p of allPages) {
       if (!p.parentId && p.path) {

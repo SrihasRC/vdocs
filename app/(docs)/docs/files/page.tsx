@@ -17,7 +17,7 @@ export default async function FilesPage() {
 
   return (
     <DocsPage full>
-      <DocsBody className="mt-2">
+      <DocsBody className="mt-2 not-prose">
         <StorageManagerView initialSummary={summary} />
       </DocsBody>
     </DocsPage>

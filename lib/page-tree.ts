@@ -22,17 +22,17 @@ export function buildPageTreeFromPages(
     { rootName: string; rootDesc: string; categoryLabel: string; sortOrder: number }
   >();
 
-  knownCategories.set("commands", {
-    rootName: "Commands",
-    rootDesc: "System commands & CLI snippets",
-    categoryLabel: "Runbooks & Tools",
+  knownCategories.set("development", {
+    rootName: "Development",
+    rootDesc: "Version control & developer setup",
+    categoryLabel: "Workflows & Tooling",
     sortOrder: 1,
   });
 
-  knownCategories.set("applications", {
-    rootName: "Applications",
-    rootDesc: "Job applications, questions & profiles",
-    categoryLabel: "Career & Preparation",
+  knownCategories.set("maintenance", {
+    rootName: "System Maintenance",
+    rootDesc: "System hygiene & cleanup runbooks",
+    categoryLabel: "Maintenance & Storage",
     sortOrder: 2,
   });
 
@@ -226,10 +226,10 @@ export function buildPageTreeFromPages(
     url: `${baseUrl}/files`,
   });
 
-  // Build All Category Sections
-  const sortedCategories = Array.from(knownCategories.entries()).sort(
-    (a, b) => a[1].sortOrder - b[1].sortOrder
-  );
+  // Build All Category Sections (only for categories that contain pages)
+  const sortedCategories = Array.from(knownCategories.entries())
+    .filter(([catKey]) => (categoryBuckets.get(catKey)?.length || 0) > 0)
+    .sort((a, b) => a[1].sortOrder - b[1].sortOrder);
 
   const categoryFolders = sortedCategories.map(([catKey, catInfo]) => {
     return buildSection({

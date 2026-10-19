@@ -1,13 +1,14 @@
 "use client";
 
-import { useState, useEffect, useTransition } from "react";
+import { useState, useEffect } from "react";
+import dynamic from "next/dynamic";
 import {
   StorageSummary,
   getR2StorageSummary,
-  initiateFileUpload,
   deleteFileAction,
   getFileDownloadUrl,
 } from "@/app/actions/files";
+import { FileRecord } from "@/lib/db/schema";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ConfirmDeleteDialog } from "@/components/ui/confirm-delete-dialog";
@@ -26,12 +27,13 @@ import {
   FileCheck,
   Image,
   Paperclip,
-  CheckCircle2,
   AlertCircle,
   ExternalLink,
   ShieldCheck,
   Plus,
   Loader2,
+  Eye,
+  Link2,
 } from "lucide-react";
 import {
   Dialog,
@@ -41,6 +43,21 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 
+const PdfViewer = dynamic(() => import("@/components/blocks/pdf-viewer"), {
+  ssr: false,
+  loading: () => (
+    <div className="w-full h-80 rounded-xl border border-fd-border/70 bg-neutral-950/50 flex flex-col items-center justify-center text-xs text-fd-muted-foreground gap-2">
+      <Loader2 className="size-5 animate-spin text-amber-400" />
+      <span>Loading PDF preview...</span>
+    </div>
+  ),
+});
+
+type EnrichedFile = FileRecord & {
+  referencedInPagesCount: number;
+  pagesTitles: string[];
+};
+
 interface StorageManagerViewProps {
   initialSummary?: StorageSummary | null;
 }
@@ -49,8 +66,11 @@ export function StorageManagerView({ initialSummary }: StorageManagerViewProps) 
   const [summary, setSummary] = useState<StorageSummary | null>(initialSummary || null);
   const [loading, setLoading] = useState(!initialSummary);
   const [searchQuery, setSearchQuery] = useState("");
-  const [filterKind, setFilterKind] = useState<string>("all");
+  const [filterType, setFilterType] = useState<"all" | "pdf" | "image" | "unlinked">("all");
   const [copiedId, setCopiedId] = useState<string | null>(null);
+
+  // In-app preview modal state
+  const [previewTarget, setPreviewTarget] = useState<EnrichedFile | null>(null);
 
   // Upload Dialog State
   const [uploadOpen, setUploadOpen] = useState(false);
@@ -156,6 +176,9 @@ export function StorageManagerView({ initialSummary }: StorageManagerViewProps) 
     setIsDeleting(false);
     setDeleteTarget(null);
     if (success) {
+      if (previewTarget?.id === deleteTarget.id) {
+        setPreviewTarget(null);
+      }
       await refreshStats();
     } else {
       alert("Failed to delete file from storage.");
@@ -176,6 +199,7 @@ export function StorageManagerView({ initialSummary }: StorageManagerViewProps) 
   };
 
   const formatSize = (bytes: number) => {
+    if (!bytes || bytes <= 0) return "0 B";
     if (bytes < 1024) return `${bytes} B`;
     if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
     if (bytes < 1024 * 1024 * 1024) return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
@@ -183,21 +207,39 @@ export function StorageManagerView({ initialSummary }: StorageManagerViewProps) 
   };
 
   const r2Configured = summary?.r2Stats.configured ?? false;
+  const allDbFiles = summary?.dbFiles || [];
+
+  // Filter counts
+  const pdfCount = allDbFiles.filter(
+    (f) => f.mimeType === "application/pdf" || f.storageKey.toLowerCase().endsWith(".pdf")
+  ).length;
+  const imageCount = allDbFiles.filter((f) => f.mimeType.startsWith("image/")).length;
+  const unlinkedCount = allDbFiles.filter((f) => f.referencedInPagesCount === 0).length;
+  const linkedCount = allDbFiles.filter((f) => f.referencedInPagesCount > 0).length;
 
   // Filter files
-  const filteredFiles = (summary?.dbFiles || []).filter((f) => {
-    const matchesKind = filterKind === "all" || f.kind === filterKind;
+  const filteredFiles = allDbFiles.filter((f) => {
+    let matchesType = true;
+    if (filterType === "pdf") {
+      matchesType = f.mimeType === "application/pdf" || f.storageKey.toLowerCase().endsWith(".pdf");
+    } else if (filterType === "image") {
+      matchesType = f.mimeType.startsWith("image/");
+    } else if (filterType === "unlinked") {
+      matchesType = f.referencedInPagesCount === 0;
+    }
+
     const q = searchQuery.toLowerCase().trim();
     const matchesSearch =
       !q ||
       f.label.toLowerCase().includes(q) ||
       f.storageKey.toLowerCase().includes(q) ||
       (f.tags || []).some((t) => t.toLowerCase().includes(q));
-    return matchesKind && matchesSearch;
+
+    return matchesType && matchesSearch;
   });
 
   return (
-    <div className="space-y-6 max-w-6xl mx-auto">
+    <div className="not-prose space-y-6 max-w-6xl mx-auto">
       {/* Header Bar */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-fd-border/70">
         <div>
@@ -207,7 +249,7 @@ export function StorageManagerView({ initialSummary }: StorageManagerViewProps) 
                 Cloudflare R2 Storage & File Vault
               </h1>
               <p className="text-xs text-fd-muted-foreground">
-                Direct S3-compatible private object storage with zero egress fees and automatic file versioning.
+                Direct S3-compatible private object storage with zero egress fees and inline browser viewing.
               </p>
             </div>
           </div>
@@ -286,21 +328,21 @@ export function StorageManagerView({ initialSummary }: StorageManagerViewProps) 
             {formatSize(summary?.r2Stats.totalSizeBytes || summary?.stats.totalBytes || 0)}
           </div>
           <p className="text-[11px] text-emerald-400/90 flex items-center gap-1 font-medium">
-            <span>✓ Zero egress bandwidth fees</span>
+            <span>Zero egress bandwidth fees</span>
           </p>
         </div>
 
-        {/* Card 4: Categories Breakdown */}
+        {/* Card 4: Vault Status */}
         <div className="rounded-xl border border-fd-border bg-fd-card p-4 space-y-2 shadow-xs">
           <div className="flex items-center justify-between text-xs text-fd-muted-foreground">
-            <span className="font-medium">Vault Categories</span>
-            <Paperclip className="size-4 text-amber-400" />
+            <span className="font-medium">Vault File Status</span>
+            <Link2 className="size-4 text-amber-400" />
           </div>
           <div className="grid grid-cols-2 gap-1 text-[11px] font-mono text-fd-muted-foreground">
-            <div>Resumes: <span className="text-fd-foreground font-semibold">{summary?.stats.resumesCount || 0}</span></div>
-            <div>Certs: <span className="text-fd-foreground font-semibold">{summary?.stats.certificatesCount || 0}</span></div>
-            <div>Photos: <span className="text-fd-foreground font-semibold">{summary?.stats.photosCount || 0}</span></div>
-            <div>Other: <span className="text-fd-foreground font-semibold">{summary?.stats.otherCount || 0}</span></div>
+            <div>Linked: <span className="text-fd-foreground font-semibold">{linkedCount}</span></div>
+            <div>Unlinked: <span className="text-amber-400 font-semibold">{unlinkedCount}</span></div>
+            <div>PDFs: <span className="text-fd-foreground font-semibold">{pdfCount}</span></div>
+            <div>Images: <span className="text-fd-foreground font-semibold">{imageCount}</span></div>
           </div>
         </div>
       </div>
@@ -319,24 +361,23 @@ export function StorageManagerView({ initialSummary }: StorageManagerViewProps) 
         </div>
       )}
 
-      {/* Controls: Search & Filter Tabs */}
+      {/* Controls: Search & Format Filter Tabs */}
       <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 pt-2">
-        {/* Kind Filters */}
+        {/* Format / Status Filters */}
         <div className="flex items-center gap-1 p-1 rounded-lg bg-fd-secondary/30 border border-fd-border/70 overflow-x-auto">
           {[
-            { id: "all", label: "All Files" },
-            { id: "resume", label: "Resumes" },
-            { id: "certificate", label: "Certificates" },
-            { id: "photo", label: "Photos" },
-            { id: "other", label: "Other" },
+            { id: "all" as const, label: `All Files (${allDbFiles.length})` },
+            { id: "pdf" as const, label: `PDFs (${pdfCount})` },
+            { id: "image" as const, label: `Images (${imageCount})` },
+            { id: "unlinked" as const, label: `Unlinked (${unlinkedCount})` },
           ].map((tab) => (
             <button
               key={tab.id}
               type="button"
-              onClick={() => setFilterKind(tab.id)}
+              onClick={() => setFilterType(tab.id)}
               className={cn(
                 "px-2.5 py-1 text-xs rounded-md font-medium transition-colors cursor-pointer whitespace-nowrap",
-                filterKind === tab.id
+                filterType === tab.id
                   ? "bg-fd-background text-fd-foreground shadow-xs border border-fd-border/60 font-semibold"
                   : "text-fd-muted-foreground hover:text-fd-foreground"
               )}
@@ -352,7 +393,7 @@ export function StorageManagerView({ initialSummary }: StorageManagerViewProps) 
           <Input
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Search by label, key, or tag..."
+            placeholder="Search by label or key..."
             className="pl-8 h-8 text-xs bg-fd-background"
           />
         </div>
@@ -381,55 +422,56 @@ export function StorageManagerView({ initialSummary }: StorageManagerViewProps) 
               className="h-8 text-xs bg-amber-400 text-black hover:bg-amber-300 font-semibold gap-1.5 cursor-pointer"
             >
               <Upload className="size-3.5" />
-              <span>Upload First File</span>
+              <span>Upload File</span>
             </Button>
           </div>
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs border-collapse">
+            <table className="w-full text-left text-xs border-collapse m-0! my-0! p-0!" style={{ margin: 0, borderSpacing: 0 }}>
               <thead>
-                <tr className="border-b border-fd-border/70 bg-fd-secondary/30 text-fd-muted-foreground text-[11px]">
-                  <th className="py-2.5 px-3.5 font-medium">File Label & Name</th>
-                  <th className="py-2.5 px-3 font-medium">Category</th>
-                  <th className="py-2.5 px-3 font-medium">Type</th>
-                  <th className="py-2.5 px-3 font-medium">Size</th>
-                  <th className="py-2.5 px-3 font-medium">Used in Pages</th>
-                  <th className="py-2.5 px-3.5 font-medium text-right">Actions</th>
+                <tr className="border-b border-fd-border/70 bg-fd-secondary/40 text-fd-muted-foreground text-[11px]">
+                  <th className="py-2.5 px-4 font-semibold uppercase tracking-wider text-fd-muted-foreground">File Label & Name</th>
+                  <th className="py-2.5 px-3 font-semibold uppercase tracking-wider text-fd-muted-foreground">Type</th>
+                  <th className="py-2.5 px-3 font-semibold uppercase tracking-wider text-fd-muted-foreground">Size</th>
+                  <th className="py-2.5 px-3 font-semibold uppercase tracking-wider text-fd-muted-foreground">Used in Pages</th>
+                  <th className="py-2.5 px-3 font-semibold uppercase tracking-wider text-fd-muted-foreground">Uploaded</th>
+                  <th className="py-2.5 px-4 font-semibold uppercase tracking-wider text-fd-muted-foreground text-right">Actions</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-fd-border/40">
+              <tbody className="divide-y divide-fd-border/40 bg-fd-card">
                 {filteredFiles.map((file) => {
+                  const isPdf = file.mimeType === "application/pdf" || file.storageKey.toLowerCase().endsWith(".pdf");
+                  const isImage = file.mimeType.startsWith("image/");
+
                   const getIcon = () => {
-                    if (file.kind === "resume") return <FileText className="size-4 text-amber-400" />;
-                    if (file.kind === "certificate") return <FileCheck className="size-4 text-emerald-400" />;
-                    if (file.kind === "photo") return <Image className="size-4 text-sky-400" />;
+                    if (isPdf) return <FileText className="size-4 text-amber-400" />;
+                    if (isImage) return <Image className="size-4 text-sky-400" />;
                     return <Paperclip className="size-4 text-zinc-400" />;
                   };
 
                   return (
                     <tr key={file.id} className="hover:bg-fd-secondary/20 transition-colors group">
-                      {/* Name & Key */}
-                      <td className="py-3 px-3.5 align-middle">
+                      {/* Name & Key (clickable to view in browser) */}
+                      <td className="py-3 px-4 align-middle">
                         <div className="flex items-center gap-2.5 min-w-0">
                           <div className="p-1.5 rounded-lg border border-fd-border/70 bg-fd-secondary/40 shrink-0">
                             {getIcon()}
                           </div>
                           <div className="min-w-0">
-                            <span className="font-semibold text-fd-foreground block truncate">
+                            <a
+                              href={`/api/files/${file.id}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="font-semibold text-fd-foreground hover:text-amber-400 transition-colors block truncate hover:underline"
+                              title="Click to view file in browser tab"
+                            >
                               {file.label}
-                            </span>
+                            </a>
                             <span className="font-mono text-[10px] text-fd-muted-foreground block truncate max-w-xs sm:max-w-sm">
                               {file.storageKey}
                             </span>
                           </div>
                         </div>
-                      </td>
-
-                      {/* Kind */}
-                      <td className="py-3 px-3 align-middle">
-                        <span className="rounded-md border border-fd-border/70 bg-fd-secondary/40 px-2 py-0.5 text-[10px] font-mono text-fd-muted-foreground uppercase">
-                          {file.kind}
-                        </span>
                       </td>
 
                       {/* Type */}
@@ -458,27 +500,63 @@ export function StorageManagerView({ initialSummary }: StorageManagerViewProps) 
                         )}
                       </td>
 
+                      {/* Uploaded Date */}
+                      <td className="py-3 px-3 align-middle font-mono text-fd-muted-foreground text-[11px] whitespace-nowrap">
+                        {file.createdAt
+                          ? new Date(file.createdAt).toLocaleDateString(undefined, {
+                              year: "numeric",
+                              month: "short",
+                              day: "numeric",
+                            })
+                          : "—"}
+                      </td>
+
                       {/* Actions */}
-                      <td className="py-3 px-3.5 align-middle text-right">
-                        <div className="flex items-center justify-end gap-1.5">
+                      <td className="py-3 px-4 align-middle text-right">
+                        <div className="flex items-center justify-end gap-1">
+                          {/* Quick Preview Modal Button */}
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => setPreviewTarget(file)}
+                            className="h-7 w-7 text-fd-muted-foreground hover:text-amber-400 cursor-pointer"
+                            title="Quick preview without leaving page"
+                          >
+                            <Eye className="size-3.5" />
+                          </Button>
+
+                          {/* Open in Browser Tab */}
+                          <a
+                            href={`/api/files/${file.id}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center justify-center h-7 w-7 rounded-md text-fd-muted-foreground hover:text-amber-400 hover:bg-fd-secondary transition-colors"
+                            title="Open in new browser tab"
+                          >
+                            <ExternalLink className="size-3.5" />
+                          </a>
+
+                          {/* Download */}
                           <Button
                             type="button"
                             variant="ghost"
                             size="icon"
                             onClick={() => handleDownload(file.id)}
                             className="h-7 w-7 text-fd-muted-foreground hover:text-amber-400 cursor-pointer"
-                            title="Download file directly from Cloudflare R2"
+                            title="Download file"
                           >
                             <Download className="size-3.5" />
                           </Button>
 
+                          {/* Copy File ID */}
                           <Button
                             type="button"
                             variant="ghost"
                             size="icon"
                             onClick={() => handleCopy(file.id, file.id)}
                             className="h-7 w-7 text-fd-muted-foreground hover:text-fd-foreground cursor-pointer"
-                            title="Copy File ID to embed in document blocks"
+                            title="Copy File ID to clipboard"
                           >
                             {copiedId === file.id ? (
                               <Check className="size-3.5 text-emerald-400" />
@@ -487,13 +565,20 @@ export function StorageManagerView({ initialSummary }: StorageManagerViewProps) 
                             )}
                           </Button>
 
+                          {/* Delete */}
                           <Button
                             type="button"
                             variant="ghost"
                             size="icon"
-                            onClick={() => setDeleteTarget({ id: file.id, label: file.label, storageKey: file.storageKey })}
+                            onClick={() =>
+                              setDeleteTarget({
+                                id: file.id,
+                                label: file.label,
+                                storageKey: file.storageKey,
+                              })
+                            }
                             className="h-7 w-7 text-destructive hover:bg-destructive/10 cursor-pointer"
-                            title="Delete file from R2 and database"
+                            title="Delete file from storage"
                           >
                             <Trash2 className="size-3.5" />
                           </Button>
@@ -507,6 +592,92 @@ export function StorageManagerView({ initialSummary }: StorageManagerViewProps) 
           </div>
         )}
       </div>
+
+      {/* Quick Preview Modal */}
+      <Dialog
+        open={Boolean(previewTarget)}
+        onOpenChange={(open) => !open && setPreviewTarget(null)}
+      >
+        <DialogContent className="max-w-4xl max-h-[90vh] bg-[#111113] border-fd-border text-fd-foreground rounded-xl p-5 shadow-2xl flex flex-col">
+          {previewTarget && (
+            <>
+              <DialogHeader className="pb-3 border-b border-fd-border/60">
+                <div className="flex items-center justify-between gap-4">
+                  <div className="min-w-0">
+                    <DialogTitle className="text-base font-semibold truncate text-fd-foreground">
+                      {previewTarget.label}
+                    </DialogTitle>
+                    <DialogDescription className="text-xs text-fd-muted-foreground font-mono flex items-center gap-2 mt-0.5">
+                      <span>{previewTarget.storageKey}</span>
+                      <span>•</span>
+                      <span>{formatSize(previewTarget.sizeBytes)}</span>
+                      <span>•</span>
+                      <span className="uppercase text-[10px]">
+                        {previewTarget.mimeType ? previewTarget.mimeType.split("/")[1] || previewTarget.mimeType : "file"}
+                      </span>
+                    </DialogDescription>
+                  </div>
+                  <div className="flex items-center gap-2 shrink-0 pr-6">
+                    <a
+                      href={`/api/files/${previewTarget.id}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-1.5 px-2.5 py-1 text-xs rounded-md bg-fd-secondary hover:bg-fd-accent text-fd-foreground border border-fd-border font-medium transition-colors"
+                    >
+                      <ExternalLink className="size-3.5" />
+                      <span>Open in Browser</span>
+                    </a>
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="outline"
+                      onClick={() => handleDownload(previewTarget.id)}
+                      className="h-7 text-xs gap-1 border-fd-border hover:bg-fd-secondary cursor-pointer"
+                    >
+                      <Download className="size-3.5" />
+                      <span>Download</span>
+                    </Button>
+                  </div>
+                </div>
+              </DialogHeader>
+
+              <div className="flex-1 overflow-y-auto py-4 min-h-[350px]">
+                {previewTarget.mimeType === "application/pdf" ||
+                previewTarget.storageKey.toLowerCase().endsWith(".pdf") ? (
+                  <PdfViewer
+                    url={`/api/files/${previewTarget.id}`}
+                    title={previewTarget.label}
+                  />
+                ) : previewTarget.mimeType.startsWith("image/") ? (
+                  <div className="flex items-center justify-center p-4 bg-neutral-950/70 rounded-xl border border-fd-border/60 min-h-[360px]">
+                    <img
+                      src={`/api/files/${previewTarget.id}`}
+                      alt={previewTarget.label}
+                      className="max-h-[70vh] w-auto max-w-full rounded-lg object-contain shadow-md"
+                    />
+                  </div>
+                ) : (
+                  <div className="p-8 text-center text-xs text-fd-muted-foreground space-y-3 bg-neutral-950/40 rounded-xl border border-fd-border/60">
+                    <p className="text-sm font-medium text-fd-foreground">
+                      Direct preview is not supported for this file format
+                    </p>
+                    <p className="text-xs">MIME Type: {previewTarget.mimeType}</p>
+                    <a
+                      href={`/api/files/${previewTarget.id}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-amber-400 text-black font-semibold text-xs hover:bg-amber-300 transition-colors"
+                    >
+                      <ExternalLink className="size-3.5" />
+                      <span>Open in Browser</span>
+                    </a>
+                  </div>
+                )}
+              </div>
+            </>
+          )}
+        </DialogContent>
+      </Dialog>
 
       {/* Upload Dialog */}
       <Dialog open={uploadOpen} onOpenChange={setUploadOpen}>
@@ -548,15 +719,12 @@ export function StorageManagerView({ initialSummary }: StorageManagerViewProps) 
                   required
                   className="h-8 text-xs bg-fd-background"
                 />
-                <span className="text-[10px] text-fd-muted-foreground block">
-                  Uploading a file with the same label and category automatically creates a new version (e.g. v2).
-                </span>
               </div>
 
-              {/* Category */}
+              {/* Document Type */}
               <div className="space-y-1.5">
                 <label className="text-xs font-medium text-fd-muted-foreground">
-                  Category
+                  Document Type
                 </label>
                 <select
                   value={uploadKind}
@@ -565,20 +733,20 @@ export function StorageManagerView({ initialSummary }: StorageManagerViewProps) 
                 >
                   <option value="resume">Resume / CV</option>
                   <option value="certificate">Certificate / Diploma</option>
-                  <option value="photo">Photo / Headshot</option>
-                  <option value="other">Other Attachment</option>
+                  <option value="photo">Photo / Image</option>
+                  <option value="other">General Attachment</option>
                 </select>
               </div>
 
               {/* Tags */}
               <div className="space-y-1.5">
                 <label className="text-xs font-medium text-fd-muted-foreground">
-                  Tags (comma-separated)
+                  Tags (optional, comma-separated)
                 </label>
                 <Input
                   value={uploadTags}
                   onChange={(e) => setUploadTags(e.target.value)}
-                  placeholder="career, 2026, pdf"
+                  placeholder="career, 2026, tech"
                   className="h-8 text-xs bg-fd-background"
                 />
               </div>
@@ -631,7 +799,7 @@ export function StorageManagerView({ initialSummary }: StorageManagerViewProps) 
         open={Boolean(deleteTarget)}
         onOpenChange={(open) => !open && setDeleteTarget(null)}
         title={deleteTarget?.label || "this file"}
-        description={`This will permanently remove the file from your Cloudflare R2 bucket and database. Any document blocks referencing this file ID will no longer be able to download it.`}
+        description="This will permanently remove the file from your Cloudflare R2 bucket and database. Any document blocks referencing this file ID will no longer be able to download or display it."
         isDeleting={isDeleting}
         onConfirm={handleConfirmDelete}
       />
