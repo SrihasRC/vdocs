@@ -25,6 +25,7 @@ import {
   AlertCircle,
   TableProperties,
   FileUp,
+  FolderInput,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -171,9 +172,9 @@ export function SortableBlock({
               size="icon"
               onClick={() => onPromote(block)}
               className="h-7 w-7 text-fd-muted-foreground hover:text-amber-400 hover:bg-amber-400/10 cursor-pointer"
-              title="Promote block to new document"
+              title="Move or promote block..."
             >
-              <FileUp className="h-3.5 w-3.5" />
+              <FolderInput className="h-3.5 w-3.5" />
             </Button>
           )}
 

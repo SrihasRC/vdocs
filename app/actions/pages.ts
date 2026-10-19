@@ -768,4 +768,115 @@ export async function promoteBlockToPage({
   }
 }
 
+/**
+ * Retrieves all pages in the vault for the block destination picker.
+ */
+export async function getPagesForBlockTransfer(currentPageId?: string) {
+  try {
+    const allPages = await db
+      .select({
+        id: pages.id,
+        title: pages.title,
+        path: pages.path,
+        slug: pages.slug,
+      })
+      .from(pages)
+      .orderBy(asc(pages.path));
+
+    const validPages = allPages.filter((p) => p.id !== currentPageId);
+    return { success: true, pages: validPages };
+  } catch (err: any) {
+    console.error("Failed to get pages for block transfer:", err);
+    return { success: false, pages: [] };
+  }
+}
+
+/**
+ * Moves a block from one document to an existing document in the vault.
+ */
+export async function moveBlockToPage({
+  sourcePageId,
+  targetPageId,
+  block,
+  removeSourceBlock = true,
+}: {
+  sourcePageId: string;
+  targetPageId: string;
+  block: Block;
+  removeSourceBlock?: boolean;
+}) {
+  try {
+    const [targetPage] = await db
+      .select()
+      .from(pages)
+      .where(eq(pages.id, targetPageId));
+
+    if (!targetPage) {
+      return { success: false, error: "Target document not found" };
+    }
+
+    // Assign fresh id to prevent collision
+    const blockToInsert: Block = {
+      ...block,
+      id: `${block.type}-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+    };
+
+    const targetBlocks = (targetPage.blocks as Block[]) || [];
+    const updatedTargetBlocks = [...targetBlocks, blockToInsert];
+    const targetSearchText = flattenBlocksToSearchText(
+      targetPage.title,
+      updatedTargetBlocks,
+      targetPage.tags || []
+    );
+
+    // 1. Update target page
+    await db
+      .update(pages)
+      .set({
+        blocks: updatedTargetBlocks,
+        searchText: targetSearchText,
+        updatedAt: new Date(),
+      })
+      .where(eq(pages.id, targetPageId));
+
+    // 2. Remove from source page if requested
+    if (removeSourceBlock && sourcePageId && sourcePageId !== targetPageId) {
+      const [sourcePage] = await db
+        .select()
+        .from(pages)
+        .where(eq(pages.id, sourcePageId));
+
+      if (sourcePage) {
+        const remainingBlocks = ((sourcePage.blocks as Block[]) || []).filter(
+          (b) => b.id !== block.id
+        );
+        const sourceSearchText = flattenBlocksToSearchText(
+          sourcePage.title,
+          remainingBlocks,
+          sourcePage.tags || []
+        );
+
+        await db
+          .update(pages)
+          .set({
+            blocks: remainingBlocks,
+            searchText: sourceSearchText,
+            updatedAt: new Date(),
+          })
+          .where(eq(pages.id, sourcePageId));
+      }
+    }
+
+    revalidatePath("/docs", "layout");
+    return {
+      success: true,
+      targetPath: targetPage.path,
+      targetTitle: targetPage.title,
+    };
+  } catch (err: any) {
+    console.error("Failed to move block to page:", err);
+    return { success: false, error: err?.message || "Failed to move block" };
+  }
+}
+
 

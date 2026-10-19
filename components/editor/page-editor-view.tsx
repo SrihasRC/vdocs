@@ -590,12 +590,18 @@ export function PageEditorView({
         defaultPageId={page.id}
       />
 
-      {/* Promote Block Dialog */}
+      {/* Promote / Move Block Dialog */}
       <PromoteBlockDialog
         open={Boolean(promotingBlock)}
         onOpenChange={(open) => !open && setPromotingBlock(null)}
         block={promotingBlock}
         sourcePageId={page.id}
+        onTransferred={(blockId, removeSource) => {
+          if (removeSource) {
+            setBlocks((prev) => prev.filter((b) => b.id !== blockId));
+            setHasUnsavedChanges(false);
+          }
+        }}
       />
     </div>
   );
