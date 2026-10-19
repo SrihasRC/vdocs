@@ -97,48 +97,32 @@ export function FileEditor({ block, onChange }: FileEditorProps) {
 
     setIsUploading(true);
     setUploadError(null);
-    setUploadMessage("Initiating upload...");
+    setUploadMessage("Uploading to Cloudflare R2...");
 
     try {
-      const tagsArray = uploadTags
-        .split(",")
-        .map((t) => t.trim())
-        .filter(Boolean);
+      const formData = new FormData();
+      formData.append("file", selectedFile);
+      formData.append("label", uploadLabel.trim());
+      formData.append("kind", uploadKind);
+      formData.append("tags", uploadTags);
 
-      const res = await initiateFileUpload({
-        label: uploadLabel.trim(),
-        kind: uploadKind,
-        filename: selectedFile.name,
-        mimeType: selectedFile.type || "application/octet-stream",
-        sizeBytes: selectedFile.size,
-        tags: tagsArray,
+      const res = await fetch("/api/files/upload", {
+        method: "POST",
+        body: formData,
       });
 
-      if (res.uploadUrl) {
-        setUploadMessage("Uploading to Cloudflare R2...");
-        const uploadRes = await fetch(res.uploadUrl, {
-          method: "PUT",
-          headers: {
-            "Content-Type": selectedFile.type || "application/octet-stream",
-          },
-          body: selectedFile,
-        });
-
-        if (!uploadRes.ok) {
-          throw new Error(`R2 upload failed with status ${uploadRes.status}`);
-        }
-      } else if (!res.isR2Configured) {
-        setUploadMessage(
-          "Notice: Record saved in DB. (R2 storage keys not configured yet in .env.local)"
-        );
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        throw new Error(data.error || `Upload failed with status ${res.status}`);
       }
 
       // Automatically select this uploaded file
-      update({ fileId: res.file.id });
-      setExistingFiles((prev) => [res.file, ...prev]);
+      update({ fileId: data.file.id });
+      setExistingFiles((prev) => [data.file, ...prev]);
       setTab("select");
       setSelectedFile(null);
       setUploadLabel("");
+      setUploadTags("");
     } catch (err: any) {
       setUploadError(err.message || "Failed to upload file");
     } finally {

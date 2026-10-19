@@ -117,36 +117,23 @@ export function StorageManagerView({ initialSummary }: StorageManagerViewProps) 
 
     setIsUploading(true);
     setUploadError(null);
-    setUploadStatusMsg("Requesting presigned upload URL...");
+    setUploadStatusMsg("Uploading binary directly to Cloudflare R2...");
 
     try {
-      const tagsArray = uploadTags
-        .split(",")
-        .map((t) => t.trim().toLowerCase())
-        .filter(Boolean);
+      const formData = new FormData();
+      formData.append("file", uploadFile);
+      formData.append("label", uploadLabel.trim());
+      formData.append("kind", uploadKind);
+      formData.append("tags", uploadTags);
 
-      const res = await initiateFileUpload({
-        label: uploadLabel.trim(),
-        kind: uploadKind,
-        filename: uploadFile.name,
-        mimeType: uploadFile.type || "application/octet-stream",
-        sizeBytes: uploadFile.size,
-        tags: tagsArray,
+      const res = await fetch("/api/files/upload", {
+        method: "POST",
+        body: formData,
       });
 
-      if (res.uploadUrl) {
-        setUploadStatusMsg("Uploading binary directly to Cloudflare R2...");
-        const uploadRes = await fetch(res.uploadUrl, {
-          method: "PUT",
-          headers: {
-            "Content-Type": uploadFile.type || "application/octet-stream",
-          },
-          body: uploadFile,
-        });
-
-        if (!uploadRes.ok) {
-          throw new Error(`R2 upload rejected with status ${uploadRes.status}`);
-        }
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        throw new Error(data.error || `Upload failed with status ${res.status}`);
       }
 
       setUploadOpen(false);

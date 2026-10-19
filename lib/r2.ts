@@ -68,6 +68,33 @@ export async function getPresignedUploadUrl(
 }
 
 /**
+ * Upload an object directly to Cloudflare R2 from the server (bypasses browser CORS).
+ */
+export async function uploadR2Object(
+  storageKey: string,
+  body: Buffer | Uint8Array,
+  contentType: string
+): Promise<void> {
+  if (!isR2Configured()) {
+    throw new Error(
+      "Cloudflare R2 is not configured. Please set R2_ACCOUNT_ID, R2_ACCESS_KEY_ID, R2_SECRET_ACCESS_KEY, and R2_BUCKET_NAME in your environment."
+    );
+  }
+
+  const client = getR2Client();
+  const bucket = getR2BucketName();
+
+  const command = new PutObjectCommand({
+    Bucket: bucket,
+    Key: storageKey,
+    Body: body,
+    ContentType: contentType,
+  });
+
+  await client.send(command);
+}
+
+/**
  * Generate a short-lived presigned GET URL for downloading private files from Cloudflare R2.
  */
 export async function getPresignedDownloadUrl(
