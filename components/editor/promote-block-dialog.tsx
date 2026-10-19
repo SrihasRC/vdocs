@@ -45,6 +45,8 @@ function getDefaultTitle(block: Block | null): string {
       return block.data.title || "Important Notice";
     case "kv":
       return block.data.title || "Cheatsheet Reference";
+    case "api":
+      return block.data.title || `${block.data.method} ${block.data.endpoint}`;
     case "file":
       return block.data.caption || "Attachment";
     default:

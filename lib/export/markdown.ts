@@ -131,6 +131,61 @@ export function pageToMarkdown(
         }
         break;
       }
+
+      case "api": {
+        const {
+          method,
+          endpoint,
+          title,
+          description,
+          params = [],
+          headers = [],
+          requestBody,
+          responseStatus,
+          responseBody,
+        } = block.data;
+
+        const heading = title ? `${title} (\`${method} ${endpoint}\`)` : `\`${method} ${endpoint}\``;
+        lines.push(`### ${heading}\n`);
+        if (description) lines.push(`${description}\n`);
+
+        if (params && params.length > 0) {
+          lines.push("#### Parameters\n");
+          lines.push("| Parameter | Example / Value | Required | Description |");
+          lines.push("| :--- | :--- | :--- | :--- |");
+          for (const p of params) {
+            lines.push(
+              `| \`${p.key.replace(/\|/g, "\\|")}\` | \`${(p.value || "").replace(/\|/g, "\\|")}\` | ${p.required ? "**Yes**" : "No"} | ${(p.description || "").replace(/\|/g, "\\|")} |`
+            );
+          }
+          lines.push("");
+        }
+
+        if (headers && headers.length > 0) {
+          lines.push("#### Headers\n");
+          lines.push("| Header | Value | Required | Description |");
+          lines.push("| :--- | :--- | :--- | :--- |");
+          for (const h of headers) {
+            lines.push(
+              `| \`${h.key.replace(/\|/g, "\\|")}\` | \`${(h.value || "").replace(/\|/g, "\\|")}\` | ${h.required ? "**Yes**" : "No"} | ${(h.description || "").replace(/\|/g, "\\|")} |`
+            );
+          }
+          lines.push("");
+        }
+
+        if (requestBody) {
+          lines.push("#### Request Body\n```json");
+          lines.push(requestBody);
+          lines.push("```\n");
+        }
+
+        if (responseBody) {
+          lines.push(`#### Response (${responseStatus || 200})\n\`\`\`json`);
+          lines.push(responseBody);
+          lines.push("```\n");
+        }
+        break;
+      }
     }
   }
 

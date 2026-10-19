@@ -51,6 +51,34 @@ export function generateTocFromBlocks(blocks: Block[]): TOCItemType[] {
         }
         break;
 
+      case "callout":
+        if (block.data.title) {
+          items.push({
+            title: block.data.title,
+            url: anchor,
+            depth: 2,
+          });
+        }
+        break;
+
+      case "kv":
+        if (block.data.title) {
+          items.push({
+            title: block.data.title,
+            url: anchor,
+            depth: 2,
+          });
+        }
+        break;
+
+      case "api":
+        items.push({
+          title: block.data.title || `${block.data.method} ${block.data.endpoint}`,
+          url: anchor,
+          depth: 2,
+        });
+        break;
+
       case "file":
         if (block.data.caption) {
           items.push({

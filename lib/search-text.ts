@@ -59,6 +59,25 @@ export function flattenBlocksToSearchText(
           if (row.description) parts.push(row.description);
         }
         break;
+
+      case "api":
+        parts.push(block.data.method);
+        parts.push(block.data.endpoint);
+        if (block.data.title) parts.push(block.data.title);
+        if (block.data.description) parts.push(block.data.description);
+        for (const p of block.data.params || []) {
+          if (p.key) parts.push(p.key);
+          if (p.value) parts.push(p.value);
+          if (p.description) parts.push(p.description);
+        }
+        for (const h of block.data.headers || []) {
+          if (h.key) parts.push(h.key);
+          if (h.value) parts.push(h.value);
+          if (h.description) parts.push(h.description);
+        }
+        if (block.data.requestBody) parts.push(block.data.requestBody);
+        if (block.data.responseBody) parts.push(block.data.responseBody);
+        break;
     }
   }
 

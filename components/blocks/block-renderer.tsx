@@ -8,6 +8,7 @@ import { NoteBlockRenderer } from "./note-block";
 import { FileBlockRenderer } from "./file-block";
 import { CalloutBlockRenderer } from "./callout-block";
 import { KVBlockRenderer } from "./kv-block";
+import { ApiBlockRenderer } from "./api-block";
 
 interface BlockListRendererProps {
   blocks: Block[];
@@ -39,6 +40,8 @@ export function BlockListRenderer({ blocks, files = {} }: BlockListRendererProps
             return <CalloutBlockRenderer key={block.id} block={block} />;
           case "kv":
             return <KVBlockRenderer key={block.id} block={block} />;
+          case "api":
+            return <ApiBlockRenderer key={block.id} block={block} />;
           case "file":
             return (
               <FileBlockRenderer

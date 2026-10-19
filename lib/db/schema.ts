@@ -72,6 +72,36 @@ export const kvBlockDataSchema = z.object({
     .default([]),
 });
 
+export const apiBlockDataSchema = z.object({
+  method: z.enum(["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS", "HEAD"]).default("GET"),
+  endpoint: z.string().default("/api/v1/resource"),
+  title: z.string().optional(),
+  description: z.string().optional(),
+  headers: z
+    .array(
+      z.object({
+        key: z.string().default(""),
+        value: z.string().default(""),
+        required: z.boolean().default(false),
+        description: z.string().optional(),
+      })
+    )
+    .default([]),
+  params: z
+    .array(
+      z.object({
+        key: z.string().default(""),
+        value: z.string().default(""),
+        required: z.boolean().default(false),
+        description: z.string().optional(),
+      })
+    )
+    .default([]),
+  requestBody: z.string().optional(),
+  responseStatus: z.number().default(200),
+  responseBody: z.string().optional(),
+});
+
 export const blockSchema = z.discriminatedUnion("type", [
   z.object({
     id: z.string(),
@@ -108,6 +138,11 @@ export const blockSchema = z.discriminatedUnion("type", [
     type: z.literal("kv"),
     data: kvBlockDataSchema,
   }),
+  z.object({
+    id: z.string(),
+    type: z.literal("api"),
+    data: apiBlockDataSchema,
+  }),
 ]);
 
 export type Block = z.infer<typeof blockSchema>;
@@ -118,6 +153,7 @@ export type NoteBlock = Extract<Block, { type: "note" }>;
 export type FileBlock = Extract<Block, { type: "file" }>;
 export type CalloutBlock = Extract<Block, { type: "callout" }>;
 export type KVBlock = Extract<Block, { type: "kv" }>;
+export type ApiBlock = Extract<Block, { type: "api" }>;
 
 /* =========================================================================
    Application Tables (Pages, Files, Redirects)

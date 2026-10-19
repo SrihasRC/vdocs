@@ -309,6 +309,27 @@ export function PageEditorView({
           },
         };
         break;
+      case "api":
+        newBlock = {
+          id,
+          type: "api",
+          data: {
+            method: "GET",
+            endpoint: "/api/v1/resource",
+            title: "API Endpoint",
+            description: "Endpoint description and usage notes.",
+            params: [
+              { key: "id", value: "string", required: true, description: "Resource identifier" },
+            ],
+            headers: [
+              { key: "Authorization", value: "Bearer <token>", required: true, description: "Bearer token" },
+            ],
+            requestBody: "",
+            responseStatus: 200,
+            responseBody: JSON.stringify({ status: "success", data: { id: "123" } }, null, 2),
+          },
+        };
+        break;
       case "file":
         newBlock = {
           id,

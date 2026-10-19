@@ -11,6 +11,7 @@ import { NoteEditor } from "./note-editor";
 import { FileEditor } from "./file-editor";
 import { CalloutEditor } from "./callout-editor";
 import { KVEditor } from "./kv-editor";
+import { ApiEditor } from "./api-editor";
 import {
   GripVertical,
   ChevronDown,
@@ -26,6 +27,7 @@ import {
   TableProperties,
   FileUp,
   FolderInput,
+  Globe,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -112,6 +114,14 @@ export function SortableBlock({
           preview:
             block.data.title ||
             `${block.data.rows?.length || 0} Key-Value Entries`,
+        };
+      case "api":
+        return {
+          icon: <Globe className="h-3.5 w-3.5 text-amber-400" />,
+          label: `API (${block.data.method})`,
+          preview:
+            block.data.title ||
+            `${block.data.method} ${block.data.endpoint}`,
         };
     }
   };
@@ -228,6 +238,9 @@ export function SortableBlock({
           )}
           {block.type === "kv" && (
             <KVEditor block={block} onChange={onChange} />
+          )}
+          {block.type === "api" && (
+            <ApiEditor block={block} onChange={onChange} />
           )}
         </div>
       )}

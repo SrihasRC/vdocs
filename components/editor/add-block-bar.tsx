@@ -12,6 +12,7 @@ import {
   FolderPlus,
   AlertCircle,
   TableProperties,
+  Globe,
 } from "lucide-react";
 
 interface AddBlockBarProps {
@@ -96,6 +97,17 @@ export function AddBlockBar({
           >
             <TableProperties className="h-3 w-3 text-amber-400" />
             Cheatsheet
+          </Button>
+
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={() => onAddBlock("api")}
+            className="h-7 text-xs gap-1.5 bg-fd-background hover:border-amber-400/40 hover:text-amber-400 cursor-pointer"
+          >
+            <Globe className="h-3 w-3 text-amber-400" />
+            API
           </Button>
 
           <Button
