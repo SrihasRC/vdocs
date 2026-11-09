@@ -272,7 +272,7 @@ export function StorageManagerView({ initialSummary }: StorageManagerViewProps) 
             type="button"
             size="sm"
             onClick={() => setUploadOpen(true)}
-            className="h-8 text-xs bg-amber-400 text-black hover:bg-amber-300 font-semibold gap-1.5 cursor-pointer shadow-xs"
+            className="h-8 text-xs bg-amber-400 text-black hover:bg-amber-300 active:bg-amber-500 font-semibold gap-1.5 cursor-pointer shadow-xs shadow-amber-500/20 ring-1 ring-inset ring-amber-300/60 transition-all"
           >
             <Plus className="size-3.5" />
             <span>Upload File</span>
@@ -419,7 +419,7 @@ export function StorageManagerView({ initialSummary }: StorageManagerViewProps) 
               type="button"
               size="sm"
               onClick={() => setUploadOpen(true)}
-              className="h-8 text-xs bg-amber-400 text-black hover:bg-amber-300 font-semibold gap-1.5 cursor-pointer"
+              className="h-8 text-xs bg-amber-400 text-black hover:bg-amber-300 active:bg-amber-500 font-semibold gap-1.5 cursor-pointer shadow-xs shadow-amber-500/20 ring-1 ring-inset ring-amber-300/60 transition-all"
             >
               <Upload className="size-3.5" />
               <span>Upload File</span>
@@ -598,7 +598,7 @@ export function StorageManagerView({ initialSummary }: StorageManagerViewProps) 
         open={Boolean(previewTarget)}
         onOpenChange={(open) => !open && setPreviewTarget(null)}
       >
-        <DialogContent className="max-w-4xl max-h-[90vh] bg-[#111113] border-fd-border text-fd-foreground rounded-xl p-5 shadow-2xl flex flex-col">
+        <DialogContent className="sm:max-w-4xl max-w-4xl w-[95vw] max-h-[90vh] bg-[#111113] border-fd-border text-fd-foreground rounded-xl p-5 shadow-2xl flex flex-col">
           {previewTarget && (
             <>
               <DialogHeader className="pb-3 border-b border-fd-border/60">
@@ -666,7 +666,7 @@ export function StorageManagerView({ initialSummary }: StorageManagerViewProps) 
                       href={`/api/files/${previewTarget.id}`}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-amber-400 text-black font-semibold text-xs hover:bg-amber-300 transition-colors"
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-amber-400 text-black font-semibold text-xs hover:bg-amber-300 active:bg-amber-500 shadow-xs shadow-amber-500/20 ring-1 ring-inset ring-amber-300/60 transition-all cursor-pointer"
                     >
                       <ExternalLink className="size-3.5" />
                       <span>Open in Browser</span>
@@ -681,7 +681,7 @@ export function StorageManagerView({ initialSummary }: StorageManagerViewProps) 
 
       {/* Upload Dialog */}
       <Dialog open={uploadOpen} onOpenChange={setUploadOpen}>
-        <DialogContent className="max-w-md bg-[#111113] border-fd-border text-fd-foreground rounded-xl p-5 shadow-2xl">
+        <DialogContent className="sm:max-w-md max-w-md w-[95vw] bg-[#111113] border-fd-border text-fd-foreground rounded-xl p-5 shadow-2xl">
           <form onSubmit={handleUploadSubmit} className="space-y-4">
             <DialogHeader>
               <DialogTitle className="flex items-center gap-2 text-base font-semibold">
@@ -780,7 +780,7 @@ export function StorageManagerView({ initialSummary }: StorageManagerViewProps) 
                 type="submit"
                 size="sm"
                 disabled={isUploading || !uploadFile || !uploadLabel.trim()}
-                className="text-xs h-8 bg-amber-400 text-black hover:bg-amber-300 font-semibold gap-1.5 cursor-pointer shadow-xs"
+                className="text-xs h-8 bg-amber-400 text-black hover:bg-amber-300 active:bg-amber-500 font-semibold gap-1.5 cursor-pointer shadow-xs shadow-amber-500/20 ring-1 ring-inset ring-amber-300/60 transition-all"
               >
                 {isUploading ? (
                   <Loader2 className="size-3.5 animate-spin" />

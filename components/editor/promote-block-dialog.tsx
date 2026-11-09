@@ -175,7 +175,7 @@ export function PromoteBlockDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-md bg-[#111113] border-fd-border text-fd-foreground rounded-xl">
+      <DialogContent className="sm:max-w-md w-[95vw] bg-[#111113] border-fd-border text-fd-foreground rounded-xl p-5 shadow-2xl">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 text-base font-semibold">
             {mode === "existing" ? (
@@ -296,7 +296,7 @@ export function PromoteBlockDialog({
                   size="sm"
                   disabled={isSubmitting || !targetPageId}
                   onClick={() => handleMoveToExisting(true)}
-                  className="text-xs h-8 bg-amber-400 text-black hover:bg-amber-300 font-semibold gap-1.5 cursor-pointer shadow-xs"
+                  className="text-xs h-8 bg-amber-400 text-black hover:bg-amber-300 active:bg-amber-500 font-semibold gap-1.5 cursor-pointer shadow-xs shadow-amber-500/20 ring-1 ring-inset ring-amber-300/60 transition-all"
                 >
                   {isSubmitting ? (
                     <Loader2 className="h-3.5 w-3.5 animate-spin" />
@@ -377,7 +377,7 @@ export function PromoteBlockDialog({
                 type="submit"
                 size="sm"
                 disabled={isSubmitting || !title.trim()}
-                className="text-xs h-8 bg-amber-400 text-black hover:bg-amber-300 font-semibold gap-1.5 cursor-pointer shadow-xs"
+                className="text-xs h-8 bg-amber-400 text-black hover:bg-amber-300 active:bg-amber-500 font-semibold gap-1.5 cursor-pointer shadow-xs shadow-amber-500/20 ring-1 ring-inset ring-amber-300/60 transition-all"
               >
                 {isSubmitting ? (
                   <Loader2 className="h-3.5 w-3.5 animate-spin" />

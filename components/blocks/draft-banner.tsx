@@ -56,7 +56,7 @@ export function DraftBanner({
           size="sm"
           disabled={isToggling}
           onClick={handlePublish}
-          className="shrink-0 h-6 px-2.5 text-xs cursor-pointer bg-amber-400 text-black hover:bg-amber-300 font-semibold gap-1.5 shadow-xs"
+          className="shrink-0 h-6 px-2.5 text-xs cursor-pointer bg-amber-400 text-black hover:bg-amber-300 active:bg-amber-500 font-semibold gap-1.5 shadow-xs shadow-amber-500/20 ring-1 ring-inset ring-amber-300/60 transition-all"
         >
           {isToggling ? (
             <Loader2 className="size-3 animate-spin" />

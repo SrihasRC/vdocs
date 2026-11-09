@@ -299,7 +299,7 @@ export function FileEditor({ block, onChange }: FileEditorProps) {
                   size="sm"
                   onClick={handleUploadSubmit}
                   disabled={isUploading || !uploadLabel.trim()}
-                  className="h-8 text-xs bg-amber-400 text-black hover:bg-amber-300 font-semibold gap-1.5"
+                  className="h-8 text-xs bg-amber-400 text-black hover:bg-amber-300 active:bg-amber-500 font-semibold gap-1.5 shadow-xs shadow-amber-500/20 ring-1 ring-inset ring-amber-300/60 transition-all cursor-pointer"
                 >
                   {isUploading ? (
                     <Loader2 className="h-3.5 w-3.5 animate-spin" />

@@ -149,15 +149,15 @@ export function FileBlockRenderer({ block, fileData }: FileBlockProps) {
               type="button"
               onClick={() => setShowPreview((prev) => !prev)}
               className={cn(
-                "inline-flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-xs font-medium transition-colors cursor-pointer",
+                "inline-flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-xs font-medium transition-all cursor-pointer shadow-xs",
                 showPreview
-                  ? "border-amber-400/40 bg-amber-400/10 text-amber-400"
+                  ? "bg-amber-400 text-black font-semibold border-amber-400 ring-1 ring-inset ring-amber-300/60 shadow-amber-500/20 hover:bg-amber-300"
                   : "border-fd-border bg-fd-secondary/30 text-fd-foreground hover:bg-fd-secondary/70 hover:text-amber-400"
               )}
             >
               {showPreview ? (
                 <>
-                  <EyeOff className="h-3.5 w-3.5 text-amber-400" />
+                  <EyeOff className="h-3.5 w-3.5 text-black" />
                   <span>Hide</span>
                 </>
               ) : (

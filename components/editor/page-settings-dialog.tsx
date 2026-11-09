@@ -14,9 +14,11 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { updatePageMetadata, deletePage, getAvailableMoveDestinations, movePage } from "@/app/actions/pages";
-import { Trash2, Settings, Loader2, Download, HardDrive, FolderInput } from "lucide-react";
+import { Trash2, Settings, Loader2, Download, HardDrive, FolderInput, ArrowUpDown } from "lucide-react";
 import { VaultBackupDialog } from "@/components/export/vault-backup-dialog";
 import { ConfirmDeleteDialog } from "@/components/ui/confirm-delete-dialog";
+import { DeleteCategoryDialog } from "@/components/editor/delete-category-dialog";
+import { ReorderPagesDialog } from "@/components/editor/reorder-pages-dialog";
 import { cn } from "@/lib/utils";
 
 interface PageSettingsDialogProps {
@@ -32,6 +34,7 @@ interface PageSettingsDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onSaved?: (updatedTitle: string, updatedTags: string[], updatedStatus: "published" | "draft") => void;
+  childPages?: { id: string; title: string; slug: string; position?: number }[];
 }
 
 export function PageSettingsDialog({
@@ -39,8 +42,15 @@ export function PageSettingsDialog({
   open,
   onOpenChange,
   onSaved,
+  childPages = [],
 }: PageSettingsDialogProps) {
   const router = useRouter();
+  const isCategoryRoot = !page.parentId && !page.path.includes("/") && page.path !== "";
+  const pageCategorySlug = page.path.includes("/")
+    ? page.path.split("/")[0]
+    : isCategoryRoot
+    ? page.path
+    : "";
   const [title, setTitle] = useState(page.title);
   const [template, setTemplate] = useState(page.template);
   const [tagsStr, setTagsStr] = useState((page.tags || []).join(", "));
@@ -50,6 +60,8 @@ export function PageSettingsDialog({
   const [isSaving, setIsSaving] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [showDeleteCategory, setShowDeleteCategory] = useState(false);
+  const [showReorder, setShowReorder] = useState(false);
   const [showVaultBackup, setShowVaultBackup] = useState(false);
 
   // Move / Hierarchy State
@@ -199,8 +211,8 @@ export function PageSettingsDialog({
   return (
     <>
       <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className="max-w-md bg-[#111113] border-fd-border text-fd-foreground rounded-lg">
-        <form onSubmit={handleSave} className="space-y-4">
+        <DialogContent className="sm:max-w-lg w-[95vw] bg-[#111113] border-fd-border text-fd-foreground rounded-xl p-5 shadow-2xl">
+        <form onSubmit={handleSave} className="space-y-4 w-full min-w-0">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 text-base font-semibold">
               <Settings className="h-4 w-4 text-amber-400" />
@@ -385,27 +397,61 @@ export function PageSettingsDialog({
                 <button
                   type="button"
                   onClick={() => setShowVaultBackup(true)}
-                  className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md border border-amber-400/40 bg-amber-400/10 hover:bg-amber-400/20 text-xs text-amber-400 transition-colors"
+                  className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md bg-amber-400 hover:bg-amber-300 active:bg-amber-500 text-xs text-black font-semibold transition-all cursor-pointer shadow-xs shadow-amber-500/20 ring-1 ring-inset ring-amber-300/60"
                 >
-                  <HardDrive className="h-3 w-3" />
+                  <HardDrive className="h-3 w-3 text-black" />
                   Full Vault Backup...
                 </button>
               </div>
             </div>
+
+            {pageCategorySlug && (
+              <div className="space-y-1.5 pt-2 border-t border-fd-border/40">
+                <label className="text-xs font-medium text-fd-muted-foreground block">
+                  Sidebar Organization
+                </label>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setShowReorder(true)}
+                  className="h-8 text-xs gap-1.5 border-fd-border bg-fd-secondary/30 hover:bg-fd-secondary text-fd-foreground cursor-pointer w-full justify-start"
+                >
+                  <ArrowUpDown className="h-3.5 w-3.5 text-amber-400" />
+                  <span>
+                    Reorder Pages in this Category ({pageCategorySlug})
+                  </span>
+                </Button>
+              </div>
+            )}
           </div>
 
           <div className="flex items-center justify-between gap-2 pt-3 border-t border-fd-border/40">
-            <Button
-              type="button"
-              variant="ghost"
-              size="sm"
-              onClick={() => setShowDeleteConfirm(true)}
-              disabled={isDeleting || isSaving}
-              className="text-destructive hover:bg-destructive/10 text-xs gap-1.5 cursor-pointer"
-            >
-              <Trash2 className="h-3.5 w-3.5" />
-              Delete Page
-            </Button>
+            {isCategoryRoot ? (
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={() => setShowDeleteCategory(true)}
+                disabled={isDeleting || isSaving}
+                className="text-destructive hover:bg-destructive/10 text-xs gap-1.5 cursor-pointer font-medium"
+              >
+                <Trash2 className="h-3.5 w-3.5" />
+                Delete Category
+              </Button>
+            ) : (
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={() => setShowDeleteConfirm(true)}
+                disabled={isDeleting || isSaving}
+                className="text-destructive hover:bg-destructive/10 text-xs gap-1.5 cursor-pointer"
+              >
+                <Trash2 className="h-3.5 w-3.5" />
+                Delete Page
+              </Button>
+            )}
 
             <div className="flex items-center gap-2">
               <Button
@@ -421,7 +467,7 @@ export function PageSettingsDialog({
                 type="submit"
                 size="sm"
                 disabled={isSaving}
-                className="text-xs h-8 bg-amber-400 text-black hover:bg-amber-300 font-semibold gap-1.5 cursor-pointer"
+                className="text-xs h-8 bg-amber-400 text-black hover:bg-amber-300 active:bg-amber-500 font-semibold gap-1.5 cursor-pointer shadow-xs shadow-amber-500/20 ring-1 ring-inset ring-amber-300/60 transition-all"
               >
                 {isSaving && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
                 Save Changes
@@ -439,6 +485,31 @@ export function PageSettingsDialog({
       isDeleting={isDeleting}
       onConfirm={handleConfirmDelete}
     />
+
+    {isCategoryRoot && (
+      <DeleteCategoryDialog
+        open={showDeleteCategory}
+        onOpenChange={setShowDeleteCategory}
+        categorySlug={page.path}
+        categoryTitle={page.title}
+        childCount={childPages.length}
+      />
+    )}
+
+    {pageCategorySlug && (
+      <ReorderPagesDialog
+        open={showReorder}
+        onOpenChange={setShowReorder}
+        categoryTitle={
+          isCategoryRoot
+            ? page.title
+            : destinations?.categories.find((c) => c.slug === pageCategorySlug)?.label ||
+              pageCategorySlug.charAt(0).toUpperCase() + pageCategorySlug.slice(1)
+        }
+        categorySlug={pageCategorySlug}
+        initialPages={childPages.length > 0 ? childPages : undefined}
+      />
+    )}
 
     <VaultBackupDialog
       open={showVaultBackup}

@@ -219,7 +219,7 @@ export function ApiEditor({ block, onChange }: ApiEditorProps) {
                 variant="outline"
                 size="sm"
                 onClick={handleAddParam}
-                className="h-6 text-xs gap-1 text-amber-400 border-amber-400/30 hover:bg-amber-400/10 cursor-pointer"
+                className="h-6 text-xs gap-1 border-fd-border/70 bg-fd-secondary/30 hover:bg-fd-secondary text-fd-foreground hover:text-amber-400 cursor-pointer shadow-xs transition-colors"
               >
                 <Plus className="size-3" />
                 Add Parameter
@@ -314,7 +314,7 @@ export function ApiEditor({ block, onChange }: ApiEditorProps) {
                 variant="outline"
                 size="sm"
                 onClick={() => handleAddHeader()}
-                className="h-6 text-xs gap-1 text-amber-400 border-amber-400/30 hover:bg-amber-400/10 cursor-pointer"
+                className="h-6 text-xs gap-1 border-fd-border/70 bg-fd-secondary/30 hover:bg-fd-secondary text-fd-foreground hover:text-amber-400 cursor-pointer shadow-xs transition-colors"
               >
                 <Plus className="size-3" />
                 Add Header

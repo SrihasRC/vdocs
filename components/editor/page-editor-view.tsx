@@ -25,6 +25,8 @@ import { AddBlockBar } from "./add-block-bar";
 import { PageSettingsDialog } from "./page-settings-dialog";
 import { CreatePageDialog } from "./create-page-dialog";
 import { PromoteBlockDialog } from "./promote-block-dialog";
+import { DeleteCategoryDialog } from "./delete-category-dialog";
+import { ReorderPagesDialog } from "./reorder-pages-dialog";
 import { QuickCaptureDialog } from "@/components/quick-capture/quick-capture-dialog";
 import { savePageBlocks, duplicatePage } from "@/app/actions/pages";
 import { DraftBanner } from "@/components/blocks/draft-banner";
@@ -33,6 +35,7 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import {
@@ -46,6 +49,8 @@ import {
   ChevronDown,
   FilePlus,
   Copy,
+  ArrowUpDown,
+  Trash2,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -73,6 +78,8 @@ export function PageEditorView({
   const [showQuickCapture, setShowQuickCapture] = useState(false);
   const [isDuplicating, setIsDuplicating] = useState(false);
   const [promotingBlock, setPromotingBlock] = useState<Block | null>(null);
+  const [showReorder, setShowReorder] = useState(false);
+  const [showDeleteCategory, setShowDeleteCategory] = useState(false);
 
   const handleDuplicate = async () => {
     setIsDuplicating(true);
@@ -102,7 +109,12 @@ export function PageEditorView({
   const [pageStatus, setPageStatus] = useState<string>(page.status || "published");
 
   // Determine if this is a top-level category landing page or a nested page
-  const isCategoryRoot = !page.parentId && !page.path.includes("/");
+  const isCategoryRoot = !page.parentId && !page.path.includes("/") && page.path !== "";
+  const pageCategorySlug = page.path.includes("/")
+    ? page.path.split("/")[0]
+    : isCategoryRoot
+    ? page.path
+    : "";
 
   // Keep a ref to latest blocks for save callbacks
   const blocksRef = useRef(blocks);
@@ -441,7 +453,7 @@ export function PageEditorView({
                 type="button"
                 size="sm"
                 onClick={handleDone}
-                className="h-8 text-xs bg-amber-400 text-black hover:bg-amber-300 font-semibold gap-1.5 rounded-lg cursor-pointer transition-colors shadow-xs"
+                className="h-8 text-xs bg-amber-400 text-black hover:bg-amber-300 active:bg-amber-500 font-semibold gap-1.5 rounded-lg cursor-pointer transition-all shadow-xs shadow-amber-500/20 ring-1 ring-inset ring-amber-300/60"
               >
                 <Check className="h-3.5 w-3.5" />
                 Done (Esc)
@@ -509,6 +521,16 @@ export function PageEditorView({
                     <span>Duplicate Page</span>
                   </DropdownMenuItem>
 
+                  {pageCategorySlug && (
+                    <DropdownMenuItem
+                      onClick={() => setShowReorder(true)}
+                      className="cursor-pointer gap-2.5 px-2.5 py-2 text-xs rounded-lg text-fd-foreground hover:bg-fd-accent/70 focus:bg-fd-accent/70"
+                    >
+                      <ArrowUpDown className="size-3.5 text-amber-400" />
+                      <span>Reorder Category Pages...</span>
+                    </DropdownMenuItem>
+                  )}
+
                   <DropdownMenuItem
                     onClick={() => setShowSettings(true)}
                     className="cursor-pointer gap-2.5 px-2.5 py-2 text-xs rounded-lg text-fd-foreground hover:bg-fd-accent/70 focus:bg-fd-accent/70"
@@ -516,6 +538,19 @@ export function PageEditorView({
                     <Settings className="size-3.5 text-amber-400" />
                     <span>Page Settings...</span>
                   </DropdownMenuItem>
+
+                  {isCategoryRoot && (
+                    <>
+                      <DropdownMenuSeparator className="bg-fd-border/60 my-1" />
+                      <DropdownMenuItem
+                        onClick={() => setShowDeleteCategory(true)}
+                        className="cursor-pointer gap-2.5 px-2.5 py-2 text-xs rounded-lg text-destructive hover:bg-destructive/10 focus:bg-destructive/10"
+                      >
+                        <Trash2 className="size-3.5" />
+                        <span>Delete Category...</span>
+                      </DropdownMenuItem>
+                    </>
+                  )}
                 </DropdownMenuContent>
               </DropdownMenu>
             </div>
@@ -570,7 +605,11 @@ export function PageEditorView({
         />
         <BlockListRenderer blocks={blocks} files={filesMap} />
         {page.template === "index" && childPages.length > 0 && (
-          <ChildPagesGrid childrenPages={childPages} />
+          <ChildPagesGrid
+            childrenPages={childPages}
+            categoryTitle={page.title}
+            categorySlug={page.path}
+          />
         )}
       </div>
 
@@ -585,6 +624,7 @@ export function PageEditorView({
           status: pageStatus,
           parentId: page.parentId,
         }}
+        childPages={childPages}
         open={showSettings}
         onOpenChange={setShowSettings}
         onSaved={(updatedTitle, updatedTags, updatedStatus) => {
@@ -594,6 +634,32 @@ export function PageEditorView({
           setPageStatus(updatedStatus);
         }}
       />
+
+      {/* Delete Category Dialog */}
+      {isCategoryRoot && (
+        <DeleteCategoryDialog
+          open={showDeleteCategory}
+          onOpenChange={setShowDeleteCategory}
+          categorySlug={page.path}
+          categoryTitle={page.title}
+          childCount={childPages.length}
+        />
+      )}
+
+      {/* Reorder Pages Dialog */}
+      {pageCategorySlug && (
+        <ReorderPagesDialog
+          open={showReorder}
+          onOpenChange={setShowReorder}
+          categoryTitle={
+            isCategoryRoot
+              ? page.title
+              : pageCategorySlug.charAt(0).toUpperCase() + pageCategorySlug.slice(1)
+          }
+          categorySlug={pageCategorySlug}
+          initialPages={childPages && childPages.length > 0 ? childPages : undefined}
+        />
+      )}
 
       {/* Create Document / Sub-Page Dialog */}
       <CreatePageDialog

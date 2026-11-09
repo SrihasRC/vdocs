@@ -152,7 +152,7 @@ export function CreateCategoryDialog({
               type="submit"
               size="sm"
               disabled={isCreating}
-              className="text-xs h-8 bg-amber-400 text-black hover:bg-amber-300 font-semibold gap-1.5 cursor-pointer shadow-xs"
+              className="text-xs h-8 bg-amber-400 text-black hover:bg-amber-300 active:bg-amber-500 font-semibold gap-1.5 cursor-pointer shadow-xs shadow-amber-500/20 ring-1 ring-inset ring-amber-300/60 transition-all"
             >
               {isCreating && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
               Create Category

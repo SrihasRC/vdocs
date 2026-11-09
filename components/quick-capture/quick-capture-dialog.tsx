@@ -595,7 +595,7 @@ export function QuickCaptureDialog({
             size="sm"
             onClick={handleCapture}
             disabled={isSubmitting}
-            className="h-8 px-3.5 text-xs cursor-pointer bg-amber-400 text-black hover:bg-amber-300 font-semibold gap-1.5 shadow-xs"
+            className="h-8 px-3.5 text-xs cursor-pointer bg-amber-400 text-black hover:bg-amber-300 active:bg-amber-500 font-semibold gap-1.5 shadow-xs shadow-amber-500/20 ring-1 ring-inset ring-amber-300/60 transition-all"
           >
             {isSubmitting && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
             Capture & Save (Cmd+Enter)
