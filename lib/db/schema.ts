@@ -15,10 +15,10 @@ import { z } from "zod";
    ========================================================================= */
 
 export const commandBlockDataSchema = z.object({
-  title: z.string().min(1, "Title is required"),
+  title: z.string().default(""),
   description: z.string().optional(),
   shell: z.string().default("bash"),
-  command: z.string().min(1, "Command is required"),
+  command: z.string().default(""),
   sudo: z.boolean().default(false),
   os: z.array(z.string()).default([]),
   notes: z.string().optional(),
@@ -29,7 +29,7 @@ export const stepsBlockDataSchema = z.object({
   steps: z
     .array(
       z.object({
-        text: z.string().min(1, "Step text is required"),
+        text: z.string().default(""),
         command: z.string().optional(),
       })
     )
@@ -37,7 +37,7 @@ export const stepsBlockDataSchema = z.object({
 });
 
 export const qaBlockDataSchema = z.object({
-  question: z.string().min(1, "Question is required"),
+  question: z.string().default(""),
   short: z.string().optional(),
   long: z.string().optional(),
 });

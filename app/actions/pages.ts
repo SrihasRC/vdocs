@@ -1,7 +1,7 @@
 "use server";
 
 import { db, pages, pathRedirects, type Block, blockSchema } from "@/lib/db";
-import { eq, asc, sql, isNull, like } from "drizzle-orm";
+import { eq, asc, sql, isNull, like, inArray, or } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { flattenBlocksToSearchText } from "@/lib/search-text";
 
@@ -913,6 +913,178 @@ export async function moveBlockToPage({
   } catch (err: any) {
     console.error("Failed to move block to page:", err);
     return { success: false, error: err?.message || "Failed to move block" };
+  }
+}
+
+/**
+ * Updates the position sort order for an ordered list of page IDs.
+ */
+export async function reorderPages(orderedPageIds: string[]) {
+  try {
+    if (!Array.isArray(orderedPageIds) || orderedPageIds.length === 0) {
+      return { success: false, error: "No page IDs provided" };
+    }
+
+    // Sequentially update positions to avoid concurrent query collisions on serverless HTTP
+    const now = new Date();
+    for (let i = 0; i < orderedPageIds.length; i++) {
+      const pageId = orderedPageIds[i];
+      if (!pageId) continue;
+      await db
+        .update(pages)
+        .set({ position: i + 1, updatedAt: now })
+        .where(eq(pages.id, pageId));
+    }
+
+    revalidatePath("/docs", "layout");
+    return { success: true };
+  } catch (err: any) {
+    console.error("Failed to reorder pages:", err);
+    const errorMsg = err?.cause?.message || err?.message || "Failed to reorder pages";
+    return { success: false, error: errorMsg };
+  }
+}
+
+/**
+ * Fetches all pages belonging to a category (root page and sub-pages).
+ */
+export async function getCategoryPages(categorySlug: string) {
+  try {
+    const cleanSlug = categorySlug.trim().replace(/^\/+|\/+$/g, "");
+    if (!cleanSlug) {
+      return { success: false, error: "Invalid category slug", rootPage: null, childPages: [] };
+    }
+
+    const allPages = await db
+      .select({
+        id: pages.id,
+        slug: pages.slug,
+        path: pages.path,
+        title: pages.title,
+        position: pages.position,
+        parentId: pages.parentId,
+      })
+      .from(pages)
+      .where(
+        or(
+          eq(pages.path, cleanSlug),
+          like(pages.path, `${cleanSlug}/%`)
+        )
+      )
+      .orderBy(asc(pages.position));
+
+    const rootPage = allPages.find((p) => p.path === cleanSlug) || null;
+    const childPages = allPages.filter((p) => p.path !== cleanSlug);
+
+    return {
+      success: true,
+      rootPage,
+      childPages,
+      totalCount: allPages.length,
+    };
+  } catch (err: any) {
+    console.error("Failed to fetch category pages:", err);
+    return {
+      success: false,
+      error: err?.message || "Failed to fetch pages",
+      rootPage: null,
+      childPages: [],
+    };
+  }
+}
+
+/**
+ * Deletes an entire documentation category.
+ * If deleteChildPages is true, removes all pages in the category.
+ * If deleteChildPages is false, moves all nested pages to the Vault root.
+ */
+export async function deleteCategory({
+  categorySlug,
+  deleteChildPages = false,
+}: {
+  categorySlug: string;
+  deleteChildPages: boolean;
+}) {
+  try {
+    const cleanSlug = categorySlug.trim().replace(/^\/+|\/+$/g, "");
+    if (!cleanSlug) {
+      return { success: false, error: "Cannot delete Vault root category" };
+    }
+
+    // 1. Fetch all pages in category
+    const catPages = await db
+      .select({
+        id: pages.id,
+        slug: pages.slug,
+        path: pages.path,
+      })
+      .from(pages)
+      .where(
+        or(
+          eq(pages.path, cleanSlug),
+          like(pages.path, `${cleanSlug}/%`)
+        )
+      );
+
+    if (catPages.length === 0) {
+      return { success: false, error: "Category not found or already deleted" };
+    }
+
+    const rootPage = catPages.find((p) => p.path === cleanSlug);
+    const childPages = catPages.filter((p) => p.path !== cleanSlug);
+
+    if (deleteChildPages) {
+      // Delete all pages in category
+      const idsToDelete = catPages.map((p) => p.id);
+      if (idsToDelete.length > 0) {
+        await db.delete(pages).where(inArray(pages.id, idsToDelete));
+      }
+    } else {
+      // Move child pages to Vault root (slug becomes path, parentId = null)
+      for (const child of childPages) {
+        const oldPath = child.path;
+        let newPath = child.slug;
+
+        // Check if root path collision exists
+        const [existing] = await db
+          .select({ id: pages.id })
+          .from(pages)
+          .where(eq(pages.path, newPath));
+
+        if (existing && existing.id !== child.id) {
+          newPath = `${cleanSlug}-${child.slug}`;
+        }
+
+        // Register redirect
+        await db
+          .insert(pathRedirects)
+          .values({ oldPath, pageId: child.id })
+          .onConflictDoUpdate({
+            target: pathRedirects.oldPath,
+            set: { pageId: child.id, createdAt: new Date() },
+          });
+
+        await db
+          .update(pages)
+          .set({
+            path: newPath,
+            parentId: null,
+            updatedAt: new Date(),
+          })
+          .where(eq(pages.id, child.id));
+      }
+
+      // Delete the root category page
+      if (rootPage) {
+        await db.delete(pages).where(eq(pages.id, rootPage.id));
+      }
+    }
+
+    revalidatePath("/docs", "layout");
+    return { success: true, count: catPages.length };
+  } catch (err: any) {
+    console.error("Failed to delete category:", err);
+    return { success: false, error: err?.message || "Failed to delete category" };
   }
 }
 
