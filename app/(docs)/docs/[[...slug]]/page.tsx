@@ -10,7 +10,7 @@ import { getMDXComponents } from "@/components/mdx";
 import type { Metadata } from "next";
 import { createRelativeLink } from "fumadocs-ui/mdx";
 import { db, pages, files, pathRedirects, type Block } from "@/lib/db";
-import { and, asc, eq, inArray } from "drizzle-orm";
+import { and, asc, eq, inArray, or, like } from "drizzle-orm";
 import { BlockListRenderer } from "@/components/blocks/block-renderer";
 import { ChildPagesGrid } from "@/components/blocks/child-pages-grid";
 import { generateTocFromBlocks } from "@/lib/block-toc";
@@ -62,6 +62,13 @@ export default async function Page({ params }: Props) {
     const toc = generateTocFromBlocks(dbPage.blocks);
 
     // Fetch child pages for index grids
+    const childPagesCondition = dbPage.path
+      ? or(
+          eq(pages.parentId, dbPage.id),
+          like(pages.path, `${dbPage.path}/%`)
+        )
+      : eq(pages.parentId, dbPage.id);
+
     const childPages = await db
       .select({
         id: pages.id,
@@ -70,9 +77,10 @@ export default async function Page({ params }: Props) {
         title: pages.title,
         template: pages.template,
         tags: pages.tags,
+        position: pages.position,
       })
       .from(pages)
-      .where(eq(pages.parentId, dbPage.id))
+      .where(childPagesCondition)
       .orderBy(asc(pages.position));
 
     // Fetch any attached files metadata

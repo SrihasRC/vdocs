@@ -3,10 +3,12 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { ArrowRight, Trash2 } from "lucide-react";
+import { ArrowRight, Trash2, ArrowUpDown } from "lucide-react";
 import { deletePage } from "@/app/actions/pages";
 import { ConfirmDeleteDialog } from "@/components/ui/confirm-delete-dialog";
 import { TagChip } from "@/components/ui/tag-chip";
+import { Button } from "@/components/ui/button";
+import { ReorderPagesDialog } from "@/components/editor/reorder-pages-dialog";
 
 export interface ChildPageItem {
   id: string;
@@ -16,21 +18,27 @@ export interface ChildPageItem {
   template: string;
   description?: string;
   tags?: string[];
+  position?: number;
 }
 
 interface ChildPagesGridProps {
   childrenPages: ChildPageItem[];
   title?: string;
+  categoryTitle?: string;
+  categorySlug?: string;
   onAddSubpage?: () => void;
 }
 
 export function ChildPagesGrid({
   childrenPages,
   title = "In this section",
+  categoryTitle = "This Section",
+  categorySlug = "",
 }: ChildPagesGridProps) {
   const router = useRouter();
   const [deleteTarget, setDeleteTarget] = useState<ChildPageItem | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [showReorder, setShowReorder] = useState(false);
 
   if (childrenPages.length === 0) return null;
 
@@ -55,6 +63,20 @@ export function ChildPagesGrid({
           <h3 className="text-xs font-semibold uppercase tracking-wider text-fd-muted-foreground">
             {title}
           </h3>
+
+          {childrenPages.length > 1 && (
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => setShowReorder(true)}
+              className="h-7 text-xs gap-1.5 border-fd-border bg-fd-secondary/30 hover:bg-fd-secondary text-fd-foreground cursor-pointer"
+              title="Change sidebar ordering of pages in this section"
+            >
+              <ArrowUpDown className="size-3 text-amber-400" />
+              <span>Reorder Pages</span>
+            </Button>
+          )}
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
@@ -112,6 +134,14 @@ export function ChildPagesGrid({
         title={deleteTarget?.title || ""}
         isDeleting={isDeleting}
         onConfirm={handleConfirmDelete}
+      />
+
+      <ReorderPagesDialog
+        open={showReorder}
+        onOpenChange={setShowReorder}
+        categoryTitle={categoryTitle}
+        categorySlug={categorySlug}
+        initialPages={childrenPages}
       />
     </>
   );
